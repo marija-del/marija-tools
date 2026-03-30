@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Citation Cross-Checker</title>
+  <title>Marija's PR Tools</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -220,10 +220,439 @@
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 1px;
+      white-space: nowrap;
     }
 
     th:first-child { border-radius: 8px 0 0 8px; }
     th:last-child { border-radius: 0 8px 8px 0; }
+
+    .th-inner {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-icon {
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+
+    .filter-icon:hover, .filter-icon.active { opacity: 1; color: #c084fc; }
+
+    .dropdown-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 99;
+    }
+
+    .filter-dropdown {
+      position: absolute;
+      z-index: 100;
+      background: #1e0f3a;
+      border: 1px solid rgba(180,130,255,0.35);
+      border-radius: 10px;
+      padding: 8px;
+      min-width: 200px;
+      max-height: 280px;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .filter-dropdown input[type="text"] {
+      width: 100%;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(180,130,255,0.2);
+      border-radius: 6px;
+      color: white;
+      font-size: 12px;
+      padding: 6px 8px;
+      outline: none;
+      margin-bottom: 6px;
+    }
+
+    .filter-dropdown label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 6px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      color: rgba(255,255,255,0.8);
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+    }
+
+    .filter-dropdown label:hover { background: rgba(255,255,255,0.07); }
+
+    .filter-dropdown input[type="checkbox"] {
+      accent-color: #c084fc;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .dropdown-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .dropdown-actions button {
+      flex: 1;
+      background: rgba(155,89,182,0.2);
+      border: 1px solid rgba(192,132,252,0.2);
+      border-radius: 5px;
+      color: #c084fc;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 0;
+      cursor: pointer;
+    }
+
+    .dropdown-actions button:hover { background: rgba(155,89,182,0.35); }
+
+    .pitch-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      background: rgba(155,89,182,0.2);
+      border: 1px solid rgba(192,132,252,0.3);
+      border-radius: 6px;
+      color: #c084fc;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .pitch-btn:hover { background: rgba(155,89,182,0.4); }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal {
+      background: #1e0f3a;
+      border: 1px solid rgba(180,130,255,0.3);
+      border-radius: 18px;
+      padding: 32px;
+      width: 100%;
+      max-width: 580px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .modal .domain-tag {
+      font-size: 13px;
+      color: #c084fc;
+      margin-bottom: 20px;
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 9px;
+      border-radius: 8px;
+      border: 1px solid rgba(180,130,255,0.25);
+      background: transparent;
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mode-btn.selected {
+      background: rgba(155,89,182,0.3);
+      border-color: #c084fc;
+      color: white;
+    }
+
+    .client-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .client-btn {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(180,130,255,0.2);
+      background: transparent;
+      color: rgba(255,255,255,0.5);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .client-btn.selected {
+      background: rgba(155,89,182,0.3);
+      border-color: #c084fc;
+      color: white;
+    }
+
+    .pitch-output { display: none; margin-top: 20px; }
+
+    .pitch-subject {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .pitch-subject-val {
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 16px;
+    }
+
+    .pitch-body-val {
+      font-size: 14px;
+      line-height: 1.8;
+      color: rgba(255,255,255,0.85);
+      white-space: pre-wrap;
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .pitch-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .copy-btn {
+      flex: 1;
+      padding: 11px;
+      background: linear-gradient(135deg, #9b59b6, #6c3483);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover { opacity: 0.9; }
+
+    .regenerate-btn {
+      padding: 11px 18px;
+      background: transparent;
+      border: 1px solid rgba(180,130,255,0.3);
+      border-radius: 10px;
+      color: rgba(255,255,255,0.6);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .regenerate-btn:hover { border-color: #c084fc; color: white; }
+
+    .close-modal {
+      float: right;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.4);
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .close-modal:hover { color: white; }
+
+    /* ── Pitch History ── */
+    .history-section {
+      margin-top: 48px;
+    }
+
+    .history-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .history-tab {
+      padding: 8px 20px;
+      border-radius: 20px;
+      border: 1px solid rgba(180,130,255,0.25);
+      background: transparent;
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .history-tab.active {
+      background: rgba(155,89,182,0.3);
+      border-color: #c084fc;
+      color: white;
+    }
+
+    .pitch-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(180,130,255,0.15);
+      border-radius: 14px;
+      padding: 20px 22px;
+      margin-bottom: 12px;
+      transition: border-color 0.15s;
+    }
+
+    .pitch-card:hover { border-color: rgba(180,130,255,0.35); }
+
+    .pitch-card.favourite { border-color: rgba(250,204,21,0.4); background: rgba(250,204,21,0.04); }
+
+    .pitch-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+
+    .pitch-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pitch-card-domain {
+      font-weight: 700;
+      font-size: 14px;
+      color: white;
+    }
+
+    .pitch-card-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(155,89,182,0.2);
+      color: #c084fc;
+      border: 1px solid rgba(192,132,252,0.2);
+      font-weight: 600;
+    }
+
+    .pitch-card-date {
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .pitch-card-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .fav-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      opacity: 0.4;
+      transition: all 0.15s;
+      line-height: 1;
+      padding: 2px;
+    }
+
+    .fav-btn:hover, .fav-btn.active { opacity: 1; }
+
+    .pitch-card-subject {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 8px;
+    }
+
+    .pitch-card-body {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      display: none;
+    }
+
+    .pitch-card-body.expanded { display: block; }
+
+    .toggle-body {
+      background: none;
+      border: none;
+      color: #c084fc;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 0;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .small-copy-btn {
+      padding: 5px 12px;
+      background: rgba(155,89,182,0.2);
+      border: 1px solid rgba(192,132,252,0.25);
+      border-radius: 6px;
+      color: #c084fc;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .small-copy-btn:hover { background: rgba(155,89,182,0.4); }
+
+    .delete-btn {
+      padding: 5px 10px;
+      background: transparent;
+      border: 1px solid rgba(248,113,113,0.2);
+      border-radius: 6px;
+      color: rgba(248,113,113,0.5);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .delete-btn:hover { border-color: #f87171; color: #f87171; }
+
+    .empty-history {
+      text-align: center;
+      padding: 40px;
+      color: rgba(255,255,255,0.25);
+      font-size: 14px;
+    }
 
     td {
       padding: 10px 14px;
@@ -264,11 +693,217 @@
       margin-bottom: 20px;
       display: none;
     }
+
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(180,130,255,0.15);
+      margin: 48px 0;
+    }
+
+    .tool-title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .placement-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) { .placement-inputs { grid-template-columns: 1fr; } }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #c084fc;
+      margin-bottom: 8px;
+    }
+
+    .input-group input {
+      width: 100%;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(180,130,255,0.25);
+      border-radius: 10px;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      padding: 12px;
+      outline: none;
+    }
+
+    .input-group input:focus { border-color: rgba(192,132,252,0.6); }
+    .input-group input::placeholder { color: rgba(255,255,255,0.25); }
+
+    .angles {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .angle-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(180,130,255,0.2);
+      border-radius: 14px;
+      padding: 22px;
+    }
+
+    .angle-num {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #c084fc;
+      margin-bottom: 10px;
+    }
+
+    .angle-section {
+      font-size: 15px;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .angle-quote {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      font-style: italic;
+      border-left: 2px solid rgba(192,132,252,0.4);
+      padding-left: 12px;
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .angle-reason {
+      font-size: 13px;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .anchor-tag {
+      display: inline-block;
+      background: rgba(155,89,182,0.25);
+      border: 1px solid rgba(192,132,252,0.3);
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #c084fc;
+      font-weight: 600;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: rgba(255,255,255,0.5);
+      font-size: 14px;
+      display: none;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(192,132,252,0.3);
+      border-top-color: #c084fc;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .table-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .filter-input {
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(180,130,255,0.25);
+      border-radius: 8px;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      padding: 8px 12px;
+      outline: none;
+    }
+
+    .filter-input:focus { border-color: rgba(192,132,252,0.5); }
+    .filter-input::placeholder { color: rgba(255,255,255,0.25); }
+
+    .export-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: rgba(155,89,182,0.2);
+      border: 1px solid rgba(192,132,252,0.3);
+      border-radius: 8px;
+      color: #c084fc;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .export-btn:hover { background: rgba(155,89,182,0.35); }
+
+    .placement-error {
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.3);
+      border-radius: 10px;
+      padding: 14px;
+      color: #f87171;
+      font-size: 13px;
+      margin-top: 16px;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Citation Cross-Checker</h1>
+    <h1>Marija's PR Tools</h1>
+    <p class="subtitle">Built for Digital PR at OGM</p>
+
+    <!-- ── TOOL 2: PLACEMENT ANGLES ── -->
+    <div class="tool-title" style="margin-top:0; margin-bottom:6px;">Link Placement Angles</div>
+    <p class="subtitle">Paste a citation page and your target URL — get 3 natural placement suggestions</p>
+
+    <div class="placement-inputs">
+      <div class="input-group">
+        <label>Citation Page URL</label>
+        <input type="url" id="citationUrl" placeholder="https://agilitypr.com/article..." />
+      </div>
+      <div class="input-group">
+        <label>Your Target URL</label>
+        <input type="url" id="targetUrl" placeholder="https://air.inc/resources/..." />
+      </div>
+    </div>
+
+    <button class="run-btn" onclick="getSuggestions()" id="suggestBtn">Suggest Placement Angles</button>
+
+    <div class="loading" id="loadingBox">
+      <span class="spinner"></span> Reading both pages and thinking...
+    </div>
+    <div class="placement-error" id="placementError"></div>
+    <div class="angles" id="anglesBox"></div>
+
+    <hr class="divider" />
+
+    <!-- ── TOOL 1: CROSS-CHECKER ── -->
+    <div class="tool-title">Citation Cross-Checker</div>
     <p class="subtitle">Match Profound citations against your homie network instantly</p>
 
     <div class="steps">
@@ -283,12 +918,33 @@
           <input type="file" id="csvFile" accept=".csv" />
           <span class="file-name" id="fileName">No file chosen</span>
         </div>
+        <div style="margin-top:14px;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Client (optional)</div>
+          <select id="clientSelect" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(180,130,255,0.25);border-radius:8px;color:white;font-family:Inter,sans-serif;font-size:13px;padding:8px 10px;outline:none;cursor:pointer;">
+            <option value="">— All clients / General —</option>
+            <option value="ShipBob">ShipBob</option>
+            <option value="Matterport">Matterport</option>
+            <option value="Air">Air</option>
+            <option value="EasyLlama">EasyLlama</option>
+            <option value="Profound">Profound</option>
+          </select>
+        </div>
       </div>
 
       <div class="step">
         <div class="step-label">Step 2</div>
-        <h2>Paste your network domains</h2>
-        <textarea id="networkInput" placeholder="venngage.com&#10;socialbee.com&#10;aicontentfy.com&#10;...one domain per line"></textarea>
+        <h2>Your homie network</h2>
+        <input
+          type="url"
+          id="sheetUrl"
+          placeholder="Paste Google Sheet published CSV URL..."
+          style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(180,130,255,0.25);border-radius:10px;color:white;font-family:Inter,sans-serif;font-size:12px;padding:10px 12px;outline:none;margin-bottom:8px;box-sizing:border-box;"
+        />
+        <button class="file-btn" id="loadSheetBtn" onclick="loadFromSheet()" style="margin-bottom:10px; border-style:solid; width:100%; justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span id="loadSheetLabel">Load from Google Sheet</span>
+        </button>
+        <textarea id="networkInput" placeholder="Or paste domains manually, one per line..."></textarea>
       </div>
     </div>
 
@@ -306,9 +962,9 @@
           <div class="stat-num green" id="matchCount">0</div>
           <div class="stat-label">In Your Network</div>
         </div>
-        <div class="stat">
+        <div class="stat" onclick="document.getElementById('newSection').scrollIntoView({behavior:'smooth'})" style="cursor:pointer;" title="Click to jump to list">
           <div class="stat-num blue" id="newCount">0</div>
-          <div class="stat-label">New Opportunities</div>
+          <div class="stat-label">New Opportunities ↓</div>
         </div>
       </div>
 
@@ -316,38 +972,231 @@
         <div class="dot green"></div>
         In Your Network
       </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button class="export-btn" onclick="exportCSV('match')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+      </div>
       <table id="matchTable">
         <thead>
           <tr>
-            <th>Domain</th>
+            <th><div class="th-inner">Domain <span class="filter-icon" id="fi-match-domain" onclick="openFilter(event,'match','domain')">▾</span></div></th>
+            <th><div class="th-inner">Contact <span class="filter-icon" id="fi-match-contact" onclick="openFilter(event,'match','contact')">▾</span></div></th>
             <th>Full Page</th>
-            <th>Status</th>
-            <th>Rank</th>
+            <th><div class="th-inner">Mentioned <span class="filter-icon" id="fi-match-mentioned" onclick="openFilter(event,'match','mentioned')">▾</span></div></th>
+            <th><div class="th-inner">Rank <span class="filter-icon" id="fi-match-rank" onclick="openFilter(event,'match','rank')">▾</span><span class="filter-icon" id="sort-match" onclick="toggleSort('match')" title="Sort by rank">↕</span></div></th>
+            <th><div class="th-inner">Clients Cited <span class="filter-icon" id="sort-match-brand_count" onclick="toggleSortCol('match','brand_count')" title="Sort by clients">↕</span></div></th>
           </tr>
         </thead>
         <tbody id="matchBody"></tbody>
       </table>
 
-      <div class="section-title">
+      <div class="section-title" id="newSection">
         <div class="dot blue"></div>
         New Opportunities
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button class="export-btn" onclick="exportCSV('new')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
       </div>
       <table id="newTable">
         <thead>
           <tr>
-            <th>Domain</th>
+            <th><div class="th-inner">Domain <span class="filter-icon" id="fi-new-domain" onclick="openFilter(event,'new','domain')">▾</span></div></th>
             <th>Full Page</th>
-            <th>Mentioned?</th>
-            <th>Rank</th>
+            <th><div class="th-inner">Mentioned <span class="filter-icon" id="fi-new-mentioned" onclick="openFilter(event,'new','mentioned')">▾</span></div></th>
+            <th><div class="th-inner">Rank <span class="filter-icon" id="fi-new-rank" onclick="openFilter(event,'new','rank')">▾</span><span class="filter-icon" id="sort-new" onclick="toggleSort('new')" title="Sort by rank">↕</span></div></th>
+            <th><div class="th-inner">Citation Share <span class="filter-icon" id="sort-new-citation_share" onclick="toggleSortCol('new','citation_share')" title="Sort by citation share">↕</span></div></th>
+            <th><div class="th-inner">DR <span class="filter-icon" id="sort-new-dr" onclick="toggleSortCol('new','dr')" title="Sort by DR">↕</span></div></th>
+            <th><div class="th-inner">Traffic <span class="filter-icon" id="sort-new-traffic" onclick="toggleSortCol('new','traffic')" title="Sort by traffic">↕</span></div></th>
+            <th><div class="th-inner">Type <span class="filter-icon" id="fi-new-website_type" onclick="openFilter(event,'new','website_type')">▾</span></div></th>
+            <th><div class="th-inner">Clients cited <span class="filter-icon" id="sort-new-brand_count" onclick="toggleSortCol('new','brand_count')" title="Sort by clients">↕</span></div></th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="newBody"></tbody>
       </table>
+
+      <div class="section-title" id="competitorSection" style="display:none;margin-top:32px;">
+        <div class="dot" style="background:#f87171"></div>
+        <span style="color:#f87171">Competitors — Skip</span>
+      </div>
+      <table id="competitorTable" style="display:none">
+        <thead>
+          <tr>
+            <th>Domain</th><th>Full Page</th><th>Relationship</th><th>DR</th><th>Traffic</th>
+          </tr>
+        </thead>
+        <tbody id="competitorBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pitch History -->
+  <div class="container history-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <h1>Pitch History</h1>
+      <button class="export-btn" onclick="exportPitches()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export all
+      </button>
+    </div>
+    <p class="subtitle">Every pitch you generate is saved here automatically</p>
+    <div class="history-tabs">
+      <button class="history-tab active" onclick="showTab('all')">All pitches</button>
+      <button class="history-tab" onclick="showTab('favourites')">⭐ Favourites</button>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- Pitch Modal -->
+  <div class="modal-overlay" id="pitchModal" style="display:none" onclick="if(event.target===this)closePitchModal()">
+    <div class="modal">
+      <button class="close-modal" onclick="closePitchModal()">✕</button>
+      <h3>Draft Outreach Pitch</h3>
+      <div class="domain-tag" id="pitchDomain"></div>
+
+      <div id="contactResult" style="display:none;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:10px;padding:14px;margin-bottom:20px;font-size:13px;">
+        <div style="font-size:11px;color:#60a5fa;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px;">Contact found</div>
+        <div id="contactDetails"></div>
+      </div>
+
+      <div style="font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Pitch type</div>
+      <div class="mode-toggle">
+        <button class="mode-btn selected" id="modeGeneral" onclick="selectMode('general')">General (OGM portfolio)</button>
+        <button class="mode-btn" id="modeSpecific" onclick="selectMode('specific')">Client-specific</button>
+      </div>
+
+      <div id="clientGrid" class="client-grid" style="display:none">
+        <button class="client-btn" data-client="shipbob" onclick="selectClient(this)">ShipBob</button>
+        <button class="client-btn" data-client="matterport" onclick="selectClient(this)">Matterport</button>
+        <button class="client-btn" data-client="air" onclick="selectClient(this)">Air</button>
+        <button class="client-btn" data-client="easyllama" onclick="selectClient(this)">EasyLlama</button>
+        <button class="client-btn" data-client="profound" onclick="selectClient(this)">Profound</button>
+      </div>
+
+      <button class="run-btn" style="margin-bottom:0" onclick="generatePitch()">Generate Pitch</button>
+
+      <div class="pitch-output" id="pitchOutput">
+        <div class="pitch-subject">Subject line</div>
+        <div class="pitch-subject-val" id="pitchSubject"></div>
+        <div class="pitch-subject">Email body</div>
+        <div class="pitch-body-val" id="pitchBody"></div>
+        <div class="pitch-actions">
+          <button class="copy-btn" onclick="copyPitch()">Copy to clipboard</button>
+          <button class="regenerate-btn" onclick="generatePitch()">Regenerate</button>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
+    const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQvG79HkxBLVms9jSDG_Xo6VksV8nksUFfqdGZwfdnKRhmHJWshUkHjH_aZX_LIdt1owdM2qmKmuVg9/pub?output=csv&gid=49731873';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('sheetUrl');
+      const isValid = saved && (saved.includes('output=csv') || saved.includes('export?format=csv'));
+      document.getElementById('sheetUrl').value = isValid ? saved : DEFAULT_SHEET_URL;
+      // Auto-load network on page open
+      loadFromSheet(true);
+    });
+
+    async function loadFromSheet(silent = false) {
+      const btn = document.getElementById('loadSheetBtn');
+      const label = document.getElementById('loadSheetLabel');
+      const sheetUrl = document.getElementById('sheetUrl').value.trim();
+
+      if (!sheetUrl) return;
+
+      localStorage.setItem('sheetUrl', sheetUrl);
+      label.textContent = 'Loading...';
+      btn.style.opacity = '0.6';
+
+      try {
+        const res = await fetch('http://localhost:3456/load-network?url=' + encodeURIComponent(sheetUrl));
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        networkMap = {};
+        data.network.forEach(r => { if (r.domain) networkMap[r.domain] = r.contact || ''; });
+        document.getElementById('networkInput').value = data.domains.join('\n');
+        label.textContent = `✓ ${data.domains.length} domains loaded`;
+        btn.style.opacity = '1';
+      } catch(e) {
+        label.textContent = 'Load from Google Sheet';
+        btn.style.opacity = '1';
+        if (!silent) alert('Could not load sheet: ' + e.message);
+      }
+    }
+
+    async function getSuggestions() {
+      const citationUrl = document.getElementById('citationUrl').value.trim();
+      const targetUrl = document.getElementById('targetUrl').value.trim();
+      const errorBox = document.getElementById('placementError');
+      const loadingBox = document.getElementById('loadingBox');
+      const anglesBox = document.getElementById('anglesBox');
+      const btn = document.getElementById('suggestBtn');
+
+      errorBox.style.display = 'none';
+      anglesBox.innerHTML = '';
+
+      if (!citationUrl || !targetUrl) {
+        errorBox.textContent = 'Please enter both URLs.';
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      loadingBox.style.display = 'block';
+
+      try {
+        const res = await fetch('http://localhost:3456/suggest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ citation_url: citationUrl, target_url: targetUrl })
+        });
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        let angles;
+        try {
+          const jsonMatch = data.result.match(/\[[\s\S]*\]/);
+          angles = JSON.parse(jsonMatch ? jsonMatch[0] : data.result);
+        } catch(e) {
+          throw new Error('Could not parse suggestions. Try again.');
+        }
+
+        anglesBox.innerHTML = angles.map((a, i) => `
+          <div class="angle-card">
+            <div class="angle-num">Angle ${i + 1}</div>
+            <div class="angle-section">${a.section || ''}</div>
+            ${a.quote ? `<div class="angle-quote">"${a.quote}"</div>` : ''}
+            <div class="angle-reason">${a.reason || ''}</div>
+            <span class="anchor-tag">Anchor: ${a.anchor_text || ''}</span>
+          </div>
+        `).join('');
+
+      } catch(e) {
+        errorBox.textContent = e.message.includes('fetch')
+          ? 'Cannot connect to local server. Make sure you started it with start.command.'
+          : e.message;
+        errorBox.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        loadingBox.style.display = 'none';
+      }
+    }
+
+    let networkMap = {}; // domain -> contact name
     let csvData = null;
+    let allMatches = [];
+    const PAGE_SIZE = 100;
+    let matchPage = 1;
+    let newPage = 1;
+    let allNewOps = [];
 
     document.getElementById('csvFile').addEventListener('change', function(e) {
       const file = e.target.files[0];
@@ -423,50 +1272,616 @@
         return;
       }
 
-      const matches = [];
-      const newOps = [];
+      allMatches = [];
+      allNewOps = [];
 
       rows.forEach(row => {
         const domain = extractDomain(row.page || '');
         const entry = {
           domain,
+          contact: networkMap[domain] || '',
           page: row.page || '',
           mentioned: row.mentioned || '',
           rank: row.rank || ''
         };
         if (networkDomains.has(domain)) {
-          matches.push(entry);
+          allMatches.push(entry);
         } else {
-          newOps.push(entry);
+          allNewOps.push(entry);
         }
       });
 
       document.getElementById('totalCount').textContent = rows.length;
-      document.getElementById('matchCount').textContent = matches.length;
-      document.getElementById('newCount').textContent = newOps.length;
+      document.getElementById('matchCount').textContent = allMatches.length;
+      document.getElementById('newCount').textContent = allNewOps.length;
 
-      const matchBody = document.getElementById('matchBody');
-      matchBody.innerHTML = matches.length ? matches.map(r => `
-        <tr>
-          <td><strong>${r.domain}</strong></td>
-          <td><a class="domain-link" href="https://${r.page}" target="_blank">${r.page.length > 50 ? r.page.slice(0,50)+'…' : r.page}</a></td>
-          <td><span class="tag ${r.mentioned === 'Mentioned' ? 'mentioned' : 'not-mentioned'}">${r.mentioned || '—'}</span></td>
-          <td>#${r.rank}</td>
-        </tr>
-      `).join('') : '<tr><td colspan="4" style="color:rgba(255,255,255,0.3);padding:20px 14px">No matches found</td></tr>';
-
-      const newBody = document.getElementById('newBody');
-      newBody.innerHTML = newOps.length ? newOps.map(r => `
-        <tr>
-          <td><strong>${r.domain}</strong></td>
-          <td><a class="domain-link" href="https://${r.page}" target="_blank">${r.page.length > 50 ? r.page.slice(0,50)+'…' : r.page}</a></td>
-          <td><span class="tag ${r.mentioned === 'Mentioned' ? 'mentioned' : 'not-mentioned'}">${r.mentioned || '—'}</span></td>
-          <td>#${r.rank}</td>
-        </tr>
-      `).join('') : '<tr><td colspan="4" style="color:rgba(255,255,255,0.3);padding:20px 14px">No new opportunities found</td></tr>';
+      matchPage = 1; newPage = 1;
+      renderMatches(allMatches);
+      renderNewOps(allNewOps);
 
       document.getElementById('results').style.display = 'block';
       document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+
+      // Enrich with DB data in background
+      const allDomains = [...new Set([...allMatches, ...allNewOps].map(r => r.domain))];
+      enrichFromDB(allDomains);
+    }
+
+    let dbData = {};
+    let colSortState = { new: { col: null, dir: null }, match: { col: null, dir: null } };
+
+    async function enrichFromDB(domains) {
+      try {
+        const res = await fetch('http://localhost:3456/db-lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domains })
+        });
+        dbData = await res.json();
+
+        // Merge DB data into entries
+        const merge = entry => {
+          const d = dbData[entry.domain] || {};
+          const rels = d.relationships || [];
+          return {
+            ...entry,
+            citation_share: d.total_citation_share || 0,
+            dr: d.domain_rating || 0,
+            traffic: d.org_traffic || 0,
+            website_type: d.website_type || '',
+            brand_count: d.brand_count || 0,
+            brands: d.brands || '',
+            is_competitor: rels.some(r => r.type && r.type.includes('Competitor')),
+            relationship_type: rels.map(r => r.type).join(', ')
+          };
+        };
+
+        allMatches = allMatches.map(merge);
+        allNewOps = allNewOps.map(merge);
+
+        applyFilters('match');
+        applyFilters('new');
+      } catch(e) { /* DB enrichment optional */ }
+    }
+
+    function toggleSortCol(tableType, col) {
+      if (!colSortState[tableType]) colSortState[tableType] = { col: null, dir: null };
+      const current = colSortState[tableType];
+      current.dir = (current.col === col && current.dir === 'desc') ? 'asc' : 'desc';
+      current.col = col;
+      // Reset rank sort icon
+      sortState[tableType] = null;
+      const rankEl = document.getElementById(`sort-${tableType}`);
+      if (rankEl) { rankEl.textContent = '↕'; rankEl.classList.remove('active'); }
+      // Update col sort icon
+      ['citation_share','dr','traffic','brand_count'].forEach(c => {
+        const el = document.getElementById(`sort-${tableType}-${c}`);
+        if (el) { el.textContent = c === col ? (current.dir === 'desc' ? '↓' : '↑') : '↕'; el.classList.toggle('active', c === col); }
+      });
+      applyFilters(tableType);
+    }
+
+    function dbBadges(domain) {
+      const d = dbData[domain];
+      if (!d || !d.domain) return '';
+      const isCompetitor = d.relationships && d.relationships.some(r => r.type && r.type.includes('Competitor'));
+      const dr = d.domain_rating ? `<span style="font-size:11px;color:#a78bfa" title="Domain Rating">DR ${Math.round(d.domain_rating)}</span>` : '';
+      const traffic = d.org_traffic ? `<span style="font-size:11px;color:#34d399" title="Organic Traffic">${Number(d.org_traffic).toLocaleString()} visits</span>` : '';
+      const brands = d.brands ? `<span style="font-size:11px;color:#60a5fa" title="Clients cited">${d.brand_count} client${d.brand_count > 1 ? 's' : ''}</span>` : '';
+      const competitor = isCompetitor ? `<span style="font-size:11px;color:#f87171;font-weight:700" title="Competitor domain">⚠ Competitor</span>` : '';
+      return [competitor, dr, traffic, brands].filter(Boolean).join(' · ');
+    }
+
+    function matchRow(r) {
+      return `<tr>
+        <td><strong>${r.domain}</strong></td>
+        <td style="color:#c084fc">${r.contact || '—'}</td>
+        <td><a class="domain-link" href="https://${r.page}" target="_blank">${r.page.length > 50 ? r.page.slice(0,50)+'…' : r.page}</a></td>
+        <td><span class="tag ${r.mentioned === 'Mentioned' ? 'mentioned' : 'not-mentioned'}">${r.mentioned || '—'}</span></td>
+        <td>#${r.rank}</td>
+        <td>${r.brand_count ? `
+          <span class="brands-toggle" onclick="toggleBrands(this)" title="Click to expand">
+            <span style="color:#60a5fa;cursor:pointer;text-decoration:underline dotted">${r.brand_count} client${r.brand_count > 1 ? 's' : ''} ▾</span>
+            <div class="brands-list" style="display:none;margin-top:6px;font-size:11px;line-height:1.7">
+              ${(r.brands || '').split(',').map(b => `<div style="color:rgba(255,255,255,0.7)">• ${b.trim()}</div>`).join('')}
+            </div>
+          </span>` : '—'}</td>
+      </tr>`;
+    }
+
+    function renderMatches(data, append = false) {
+      const body = document.getElementById('matchBody');
+      const slice = data.slice(0, matchPage * PAGE_SIZE);
+      if (!data.length) {
+        body.innerHTML = '<tr><td colspan="6" style="color:rgba(255,255,255,0.3);padding:20px 14px">No matches found</td></tr>';
+      } else if (append) {
+        // Remove existing show-more row then re-append
+        const existing = body.querySelector('.show-more-row');
+        if (existing) existing.remove();
+        const newRows = data.slice((matchPage - 1) * PAGE_SIZE, matchPage * PAGE_SIZE);
+        body.insertAdjacentHTML('beforeend', newRows.map(matchRow).join(''));
+      } else {
+        body.innerHTML = slice.map(matchRow).join('');
+      }
+      // Show more row
+      const existing = body.querySelector('.show-more-row');
+      if (existing) existing.remove();
+      if (slice.length < data.length) {
+        body.insertAdjacentHTML('beforeend', `<tr class="show-more-row"><td colspan="6" style="padding:12px 14px;text-align:center">
+          <button onclick="loadMoreMatches()" style="background:rgba(192,132,252,0.15);border:1px solid rgba(192,132,252,0.3);color:#c084fc;border-radius:8px;padding:7px 20px;cursor:pointer;font-size:13px">
+            Show more (${data.length - slice.length} remaining)
+          </button></td></tr>`);
+      }
+      // Store filtered data reference for load more
+      body._data = data;
+    }
+
+    function toggleBrands(el) {
+      const list = el.querySelector('.brands-list');
+      const label = el.querySelector('span');
+      const isOpen = list.style.display !== 'none';
+      list.style.display = isOpen ? 'none' : 'block';
+      label.innerHTML = label.innerHTML.replace(isOpen ? '▴' : '▾', isOpen ? '▾' : '▴');
+    }
+
+    function fmt(num) {
+      if (!num) return '—';
+      if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num/1000).toFixed(0) + 'K';
+      return num;
+    }
+
+    function newOpRow(r) {
+      return `<tr>
+        <td><strong>${r.domain}</strong></td>
+        <td><a class="domain-link" href="https://${r.page}" target="_blank">${r.page.length > 50 ? r.page.slice(0,50)+'…' : r.page}</a></td>
+        <td><span class="tag ${r.mentioned === 'Mentioned' ? 'mentioned' : 'not-mentioned'}">${r.mentioned || '—'}</span></td>
+        <td>#${r.rank}</td>
+        <td>${r.citation_share ? `<strong style="color:#c084fc">${parseFloat(r.citation_share).toFixed(2)}%</strong>` : '—'}</td>
+        <td>${r.dr ? `<span style="color:#a78bfa">${Math.round(r.dr)}</span>` : '—'}</td>
+        <td>${r.traffic ? `<span style="color:#34d399">${fmt(r.traffic)}</span>` : '—'}</td>
+        <td>${r.website_type ? `<span style="font-size:11px;color:rgba(255,255,255,0.5)">${r.website_type}</span>` : '—'}</td>
+        <td>${r.brand_count ? `
+          <span class="brands-toggle" onclick="toggleBrands(this)" title="Click to expand">
+            <span style="color:#60a5fa;cursor:pointer;text-decoration:underline dotted">${r.brand_count} client${r.brand_count > 1 ? 's' : ''} ▾</span>
+            <div class="brands-list" style="display:none;margin-top:6px;font-size:11px;line-height:1.7">
+              ${(r.brands || '').split(',').map(b => `<div style="color:rgba(255,255,255,0.7)">• ${b.trim()}</div>`).join('')}
+            </div>
+          </span>` : '—'}</td>
+        <td style="white-space:nowrap">
+          <button class="pitch-btn" onclick="openPitchModal('${r.domain}')">✉ Pitch</button>
+          <button class="pitch-btn" style="color:#60a5fa;border-color:rgba(96,165,250,0.3);background:rgba(96,165,250,0.1);margin-top:4px" onclick="findContact('${r.domain}', this)">🔍 Contact</button>
+        </td>
+      </tr>`;
+    }
+
+    function renderNewOps(data, append = false) {
+      const normal = data.filter(r => !r.is_competitor);
+      const competitors = data.filter(r => r.is_competitor);
+
+      const body = document.getElementById('newBody');
+      const slice = normal.slice(0, newPage * PAGE_SIZE);
+
+      if (!normal.length) {
+        body.innerHTML = '<tr><td colspan="10" style="color:rgba(255,255,255,0.3);padding:20px 14px">No new opportunities found</td></tr>';
+      } else if (append) {
+        const existing = body.querySelector('.show-more-row');
+        if (existing) existing.remove();
+        const newRows = normal.slice((newPage - 1) * PAGE_SIZE, newPage * PAGE_SIZE);
+        body.insertAdjacentHTML('beforeend', newRows.map(newOpRow).join(''));
+      } else {
+        body.innerHTML = slice.map(newOpRow).join('');
+      }
+      // Show more row
+      const existing = body.querySelector('.show-more-row');
+      if (existing) existing.remove();
+      if (slice.length < normal.length) {
+        body.insertAdjacentHTML('beforeend', `<tr class="show-more-row"><td colspan="10" style="padding:12px 14px;text-align:center">
+          <button onclick="loadMoreNew()" style="background:rgba(192,132,252,0.15);border:1px solid rgba(192,132,252,0.3);color:#c084fc;border-radius:8px;padding:7px 20px;cursor:pointer;font-size:13px">
+            Show more (${normal.length - slice.length} remaining)
+          </button></td></tr>`);
+      }
+      body._data = normal;
+
+      // Competitor section
+      const compSection = document.getElementById('competitorSection');
+      const compTable = document.getElementById('competitorTable');
+      const compBody = document.getElementById('competitorBody');
+      if (competitors.length) {
+        compSection.style.display = 'flex';
+        compTable.style.display = 'table';
+        compBody.innerHTML = competitors.map(r => `
+          <tr style="opacity:0.5">
+            <td><strong>${r.domain}</strong></td>
+            <td><a class="domain-link" href="https://${r.page}" target="_blank">${r.page.length > 45 ? r.page.slice(0,45)+'…' : r.page}</a></td>
+            <td style="font-size:11px;color:#f87171">${r.relationship_type || '—'}</td>
+            <td>${r.dr ? Math.round(r.dr) : '—'}</td>
+            <td>${fmt(r.traffic)}</td>
+          </tr>`).join('');
+      } else {
+        compSection.style.display = 'none';
+        compTable.style.display = 'none';
+      }
+    }
+
+    function loadMoreMatches() {
+      matchPage++;
+      const body = document.getElementById('matchBody');
+      renderMatches(body._data, true);
+    }
+
+    function loadMoreNew() {
+      newPage++;
+      const body = document.getElementById('newBody');
+      renderNewOps(body._data, true);
+    }
+
+    // ── Pitch modal ──
+    let pitchDomain = null;
+    let pitchMode = 'general';
+    let pitchClient = null;
+
+    async function findContact(domain, btn) {
+      const orig = btn.textContent;
+      btn.textContent = '⏳ Searching...';
+      btn.disabled = true;
+      try {
+        const res = await fetch(`http://localhost:3456/find-contact?domain=${encodeURIComponent(domain)}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        // Open pitch modal and show contact
+        openPitchModal(domain);
+        const box = document.getElementById('contactResult');
+        const details = document.getElementById('contactDetails');
+        const confidenceColor = { high: '#4ade80', medium: '#fbbf24', low: '#f87171' };
+        const color = confidenceColor[data.confidence] || '#60a5fa';
+
+        details.innerHTML = `
+          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:start">
+            ${data.name ? `<div><div style="color:rgba(255,255,255,0.4);font-size:11px;margin-bottom:2px">NAME</div><div style="color:white;font-weight:600">${data.name}</div></div>` : ''}
+            ${data.role ? `<div><div style="color:rgba(255,255,255,0.4);font-size:11px;margin-bottom:2px">ROLE</div><div style="color:white">${data.role}</div></div>` : ''}
+            ${data.email ? `<div><div style="color:rgba(255,255,255,0.4);font-size:11px;margin-bottom:2px">EMAIL</div><div style="color:#60a5fa;cursor:pointer" onclick="navigator.clipboard.writeText('${data.email}')">${data.email} 📋</div></div>` : ''}
+            <div><div style="color:rgba(255,255,255,0.4);font-size:11px;margin-bottom:2px">CONFIDENCE</div><div style="color:${color};font-weight:600;text-transform:capitalize">${data.confidence || '—'}</div></div>
+          </div>
+          ${data.note ? `<div style="margin-top:10px;color:rgba(255,255,255,0.45);font-size:12px">${data.note}</div>` : ''}
+          ${data.allEmails && data.allEmails.length > 1 ? `<div style="margin-top:10px;color:rgba(255,255,255,0.4);font-size:11px">Other emails found: ${data.allEmails.slice(1).join(', ')}</div>` : ''}
+        `;
+        box.style.display = 'block';
+      } catch(e) {
+        alert('Could not find contact: ' + e.message);
+      } finally {
+        btn.textContent = orig;
+        btn.disabled = false;
+      }
+    }
+
+    function openPitchModal(domain) {
+      pitchDomain = domain;
+      pitchMode = 'general';
+      pitchClient = null;
+      document.getElementById('pitchDomain').textContent = domain;
+      document.getElementById('pitchOutput').style.display = 'none';
+      document.getElementById('contactResult').style.display = 'none';
+      document.getElementById('clientGrid').style.display = 'none';
+      document.getElementById('modeGeneral').classList.add('selected');
+      document.getElementById('modeSpecific').classList.remove('selected');
+      document.querySelectorAll('.client-btn').forEach(b => b.classList.remove('selected'));
+      document.getElementById('pitchModal').style.display = 'flex';
+    }
+
+    function closePitchModal() {
+      document.getElementById('pitchModal').style.display = 'none';
+    }
+
+    function selectMode(mode) {
+      pitchMode = mode;
+      document.getElementById('modeGeneral').classList.toggle('selected', mode === 'general');
+      document.getElementById('modeSpecific').classList.toggle('selected', mode === 'specific');
+      document.getElementById('clientGrid').style.display = mode === 'specific' ? 'grid' : 'none';
+    }
+
+    function selectClient(el) {
+      document.querySelectorAll('.client-btn').forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+      pitchClient = el.dataset.client;
+    }
+
+    async function generatePitch() {
+      if (pitchMode === 'specific' && !pitchClient) {
+        alert('Please select a client first.');
+        return;
+      }
+      const btn = document.querySelector('#pitchModal .run-btn');
+      btn.textContent = 'Writing pitch...';
+      btn.disabled = true;
+      document.getElementById('pitchOutput').style.display = 'none';
+
+      try {
+        const res = await fetch('http://localhost:3456/pitch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain: pitchDomain, mode: pitchMode, client: pitchClient })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        document.getElementById('pitchSubject').textContent = data.subject;
+        document.getElementById('pitchBody').textContent = data.body;
+        document.getElementById('pitchOutput').style.display = 'block';
+        savePitch(pitchDomain, data.subject, data.body, pitchMode, pitchClient);
+      } catch(e) {
+        alert('Error: ' + e.message);
+      } finally {
+        btn.textContent = 'Generate Pitch';
+        btn.disabled = false;
+      }
+    }
+
+    function copyPitch() {
+      const subject = document.getElementById('pitchSubject').textContent;
+      const body = document.getElementById('pitchBody').textContent;
+      navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`);
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = 'Copy to clipboard', 2000);
+    }
+
+    // ── Pitch History ──
+    let historyTab = 'all';
+
+    function savePitch(domain, subject, body, mode, client) {
+      const pitches = JSON.parse(localStorage.getItem('pitchHistory') || '[]');
+      pitches.unshift({
+        id: Date.now(),
+        domain,
+        subject,
+        body,
+        mode,
+        client: client || null,
+        date: new Date().toISOString(),
+        favourite: false
+      });
+      localStorage.setItem('pitchHistory', JSON.stringify(pitches));
+      renderHistory();
+    }
+
+    function showTab(tab) {
+      historyTab = tab;
+      document.querySelectorAll('.history-tab').forEach((t, i) => {
+        t.classList.toggle('active', (i === 0 && tab === 'all') || (i === 1 && tab === 'favourites'));
+      });
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const pitches = JSON.parse(localStorage.getItem('pitchHistory') || '[]');
+      const filtered = historyTab === 'favourites' ? pitches.filter(p => p.favourite) : pitches;
+      const list = document.getElementById('historyList');
+      if (!filtered.length) {
+        list.innerHTML = `<div class="empty-history">${historyTab === 'favourites' ? 'No favourites yet — star a pitch to save it here.' : 'No pitches yet — generate one from the New Opportunities table.'}</div>`;
+        return;
+      }
+      list.innerHTML = filtered.map(p => {
+        const date = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const badge = p.mode === 'specific' && p.client ? p.client.charAt(0).toUpperCase() + p.client.slice(1) : 'General';
+        return `
+          <div class="pitch-card ${p.favourite ? 'favourite' : ''}" id="card-${p.id}">
+            <div class="pitch-card-header">
+              <div class="pitch-card-meta">
+                <span class="pitch-card-domain">${p.domain}</span>
+                <span class="pitch-card-badge">${badge}</span>
+                <span class="pitch-card-date">${date}</span>
+              </div>
+              <div class="pitch-card-actions">
+                <button class="fav-btn ${p.favourite ? 'active' : ''}" onclick="toggleFav(${p.id})" title="${p.favourite ? 'Remove from favourites' : 'Add to favourites'}">${p.favourite ? '⭐' : '☆'}</button>
+                <button class="small-copy-btn" onclick="copyHistoryPitch(${p.id})">Copy</button>
+                <button class="delete-btn" onclick="deletePitch(${p.id})">Delete</button>
+              </div>
+            </div>
+            <div class="pitch-card-subject">Subject: ${p.subject}</div>
+            <div class="pitch-card-body" id="body-${p.id}">${p.body}</div>
+            <button class="toggle-body" onclick="toggleBody(${p.id})">Show email ▾</button>
+          </div>`;
+      }).join('');
+    }
+
+    function toggleBody(id) {
+      const el = document.getElementById(`body-${id}`);
+      const btn = el.nextElementSibling;
+      const expanded = el.classList.toggle('expanded');
+      btn.textContent = expanded ? 'Hide email ▴' : 'Show email ▾';
+    }
+
+    function toggleFav(id) {
+      const pitches = JSON.parse(localStorage.getItem('pitchHistory') || '[]');
+      const p = pitches.find(p => p.id === id);
+      if (p) { p.favourite = !p.favourite; localStorage.setItem('pitchHistory', JSON.stringify(pitches)); renderHistory(); }
+    }
+
+    function deletePitch(id) {
+      const pitches = JSON.parse(localStorage.getItem('pitchHistory') || '[]');
+      localStorage.setItem('pitchHistory', JSON.stringify(pitches.filter(p => p.id !== id)));
+      renderHistory();
+    }
+
+    function copyHistoryPitch(id) {
+      const pitches = JSON.parse(localStorage.getItem('pitchHistory') || '[]');
+      const p = pitches.find(p => p.id === id);
+      if (p) {
+        navigator.clipboard.writeText(`Subject: ${p.subject}\n\n${p.body}`);
+        const btn = document.querySelector(`#card-${id} .small-copy-btn`);
+        btn.textContent = '✓ Copied';
+        setTimeout(() => btn.textContent = 'Copy', 2000);
+      }
+    }
+
+    function exportPitches() {
+      const pitches = JSON.parse(localStorage.getItem('pitchHistory') || '[]');
+      const rows = [['Domain','Client','Subject','Body','Date','Favourite'],
+        ...pitches.map(p => [p.domain, p.client||'General', p.subject, p.body, new Date(p.date).toLocaleDateString(), p.favourite ? 'Yes' : 'No']
+          .map(v => `"${String(v).replace(/"/g,'""')}"`)
+        )
+      ];
+      const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'pitch-history.csv';
+      a.click();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => { renderHistory(); });
+
+    // ── Column filter & sort state ──
+    const activeFilters = { match: {}, new: {} };
+    const sortState = { match: null, new: null }; // null | 'asc' | 'desc'
+    let openDropdown = null;
+
+    function toggleSort(tableType) {
+      const current = sortState[tableType];
+      sortState[tableType] = current === 'asc' ? 'desc' : 'asc';
+      const el = document.getElementById(`sort-${tableType}`);
+      el.textContent = sortState[tableType] === 'asc' ? '↑' : '↓';
+      el.classList.add('active');
+      applyFilters(tableType);
+    }
+
+    function openFilter(e, tableType, col) {
+      e.stopPropagation();
+      closeDropdown();
+
+      const data = tableType === 'match' ? allMatches : allNewOps;
+      const iconEl = document.getElementById(`fi-${tableType}-${col}`);
+      const rect = iconEl.getBoundingClientRect();
+
+      // Unique values for this column
+      const allVals = [...new Set(data.map(r => String(r[col] || '—')))].sort();
+      const selected = activeFilters[tableType][col] || new Set(allVals);
+
+      // Build dropdown
+      const overlay = document.createElement('div');
+      overlay.className = 'dropdown-overlay';
+      overlay.onclick = closeDropdown;
+
+      const dd = document.createElement('div');
+      dd.className = 'filter-dropdown';
+      dd.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+      dd.style.left = (rect.left + window.scrollX) + 'px';
+
+      // Search inside dropdown
+      const search = document.createElement('input');
+      search.type = 'text';
+      search.placeholder = 'Search...';
+
+      // Select all / Clear buttons
+      const actions = document.createElement('div');
+      actions.className = 'dropdown-actions';
+      const btnAll = document.createElement('button');
+      btnAll.textContent = 'Select all';
+      const btnNone = document.createElement('button');
+      btnNone.textContent = 'Clear';
+      actions.appendChild(btnAll);
+      actions.appendChild(btnNone);
+
+      const listWrap = document.createElement('div');
+
+      function buildList(filter = '') {
+        listWrap.innerHTML = '';
+        allVals.filter(v => v.toLowerCase().includes(filter.toLowerCase())).forEach(val => {
+          const lbl = document.createElement('label');
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.value = val;
+          cb.checked = selected.has(val);
+          cb.onchange = () => {
+            if (cb.checked) selected.add(val); else selected.delete(val);
+            activeFilters[tableType][col] = selected;
+            applyFilters(tableType);
+            updateFilterIcon(tableType, col);
+          };
+          lbl.appendChild(cb);
+          lbl.appendChild(document.createTextNode(val));
+          listWrap.appendChild(lbl);
+        });
+      }
+
+      search.oninput = () => buildList(search.value);
+      btnAll.onclick = (ev) => { ev.stopPropagation(); allVals.forEach(v => selected.add(v)); activeFilters[tableType][col] = selected; buildList(search.value); applyFilters(tableType); updateFilterIcon(tableType, col); };
+      btnNone.onclick = (ev) => { ev.stopPropagation(); selected.clear(); activeFilters[tableType][col] = selected; buildList(search.value); applyFilters(tableType); updateFilterIcon(tableType, col); };
+
+      buildList();
+      dd.appendChild(search);
+      dd.appendChild(actions);
+      dd.appendChild(listWrap);
+      dd.onclick = e => e.stopPropagation();
+
+      document.body.appendChild(overlay);
+      document.body.appendChild(dd);
+      openDropdown = { overlay, dd };
+    }
+
+    function closeDropdown() {
+      if (openDropdown) {
+        openDropdown.overlay.remove();
+        openDropdown.dd.remove();
+        openDropdown = null;
+      }
+    }
+
+    function applyFilters(tableType) {
+      const data = tableType === 'match' ? allMatches : allNewOps;
+      const filters = activeFilters[tableType];
+      let filtered = data.filter(r =>
+        Object.entries(filters).every(([col, selected]) =>
+          selected.size === 0 || selected.has(String(r[col] || '—'))
+        )
+      );
+      // Rank sort (existing)
+      const sort = sortState[tableType];
+      if (sort) {
+        filtered = [...filtered].sort((a, b) => {
+          const av = parseFloat(a.rank) || 0, bv = parseFloat(b.rank) || 0;
+          return sort === 'asc' ? av - bv : bv - av;
+        });
+      }
+      // Column sort (new)
+      const cs = colSortState[tableType];
+      if (cs && cs.col) {
+        filtered = [...filtered].sort((a, b) => {
+          const av = parseFloat(a[cs.col]) || 0, bv = parseFloat(b[cs.col]) || 0;
+          return cs.dir === 'asc' ? av - bv : bv - av;
+        });
+      }
+      if (tableType === 'match') { matchPage = 1; renderMatches(filtered); }
+      else { newPage = 1; renderNewOps(filtered); }
+    }
+
+    function updateFilterIcon(tableType, col) {
+      const data = tableType === 'match' ? allMatches : allNewOps;
+      const allVals = [...new Set(data.map(r => String(r[col] || '—')))];
+      const selected = activeFilters[tableType][col];
+      const el = document.getElementById(`fi-${tableType}-${col}`);
+      if (el) el.classList.toggle('active', selected && selected.size < allVals.length);
+    }
+
+    function exportCSV(type) {
+      const data = type === 'match' ? allMatches : allNewOps;
+      const filters = activeFilters[type];
+      const filtered = data.filter(r =>
+        Object.entries(filters).every(([col, selected]) =>
+          selected.size === 0 || selected.has(String(r[col] || '—'))
+        )
+      );
+      const headers = type === 'match'
+        ? ['domain', 'contact', 'page', 'mentioned', 'rank', 'dr', 'traffic', 'website_type']
+        : ['domain', 'page', 'mentioned', 'rank', 'citation_share', 'dr', 'traffic', 'website_type', 'brand_count'];
+      const rows = [headers.join(','), ...filtered.map(r =>
+        headers.map(h => `"${(r[h] || '').toString().replace(/"/g, '""')}"`).join(',')
+      )];
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = type === 'match' ? 'in-network.csv' : 'new-opportunities.csv';
+      a.click();
     }
   </script>
 </body>
