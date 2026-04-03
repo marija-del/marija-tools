@@ -149,6 +149,66 @@
     .analysis-card ul, .analysis-card ol { padding-left: 20px; margin-bottom: 10px; }
     .analysis-card li { font-size: 14px; color: rgba(255,255,255,0.85); margin-bottom: 8px; }
     .analysis-card strong { color: white; }
+
+    /* Email draft modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      z-index: 300; display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-box {
+      background: #1b2410; border: 1px solid rgba(158,190,46,0.3);
+      border-radius: 18px; padding: 32px; width: 100%; max-width: 600px;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal-box h3 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .modal-box .modal-sub { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+    .email-field { margin-bottom: 18px; }
+    .email-field label {
+      display: block; font-size: 11px; text-transform: uppercase;
+      letter-spacing: 1.5px; color: #9ebe2e; font-weight: 600; margin-bottom: 8px;
+    }
+    .email-field .field-row {
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .email-field .field-text {
+      flex: 1; background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(158,190,46,0.2); border-radius: 10px;
+      color: rgba(255,255,255,0.9); font-size: 13px; line-height: 1.6;
+      padding: 12px; font-family: 'DM Sans', sans-serif;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .copy-field-btn {
+      flex-shrink: 0; background: rgba(40,60,10,0.3);
+      border: 1px solid rgba(158,190,46,0.3); border-radius: 8px;
+      color: #9ebe2e; font-size: 11px; font-weight: 600;
+      padding: 6px 12px; cursor: pointer; transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .copy-field-btn:hover { background: rgba(40,60,10,0.5); }
+    .modal-spinner {
+      width: 32px; height: 32px; border: 3px solid rgba(158,190,46,0.2);
+      border-top-color: #9ebe2e; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 40px auto;
+    }
+    .modal-close-btn {
+      width: 100%; padding: 12px; background: transparent;
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 10px;
+      color: rgba(255,255,255,0.5); font-size: 14px; font-weight: 600;
+      cursor: pointer; margin-top: 8px; transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .modal-close-btn:hover { border-color: rgba(255,255,255,0.3); color: white; }
+    .draft-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; background: rgba(40,60,10,0.2);
+      border: 1px solid rgba(158,190,46,0.3); border-radius: 6px;
+      color: #9ebe2e; font-size: 11px; font-weight: 600;
+      cursor: pointer; white-space: nowrap; transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .draft-btn:hover { background: rgba(40,60,10,0.4); }
   </style>
 </head>
 <body>
@@ -236,6 +296,7 @@
               <th>Citation Page</th>
               <th>Category</th>
               <th>Type</th>
+              <th>Outreach</th>
             </tr>
           </thead>
           <tbody id="gapBody"></tbody>
@@ -259,11 +320,25 @@
     </div>
   </div>
 
+  <!-- Email draft modal -->
+  <div class="modal-overlay hidden" id="emailModal" onclick="closeEmailModal(event)">
+    <div class="modal-box">
+      <h3>✉ Outreach Email Draft</h3>
+      <p class="modal-sub" id="emailModalSub">Generating...</p>
+      <div id="emailModalBody">
+        <div class="modal-spinner"></div>
+      </div>
+      <button class="modal-close-btn" onclick="document.getElementById('emailModal').classList.add('hidden')">Close</button>
+    </div>
+  </div>
+
   <script>
     let csvText = null;
     let allGaps = [];
     let shown = 0;
     const PAGE = 25;
+    let currentClient = '';
+    let currentFocus = '';
 
     document.getElementById('csvFile').addEventListener('change', function(e) {
       const file = e.target.files[0];
@@ -305,6 +380,8 @@
 
       const client = document.getElementById('clientSelect').value;
       const focus = document.getElementById('focusInput').value.trim();
+      currentClient = client;
+      currentFocus = focus;
       const competitorDomains = new Set(
         competitorRaw.split('\n').map(d => extractDomain(d)).filter(Boolean)
       );
@@ -403,12 +480,17 @@
         const pageLink = g.pageUrl
           ? `<a href="https://${g.pageUrl.replace(/^https?:\/\//, '')}" target="_blank" rel="noopener" class="page-link" title="${g.pageUrl}">${g.pageUrl.length > 55 ? g.pageUrl.substring(0, 55) + '…' : g.pageUrl} ↗</a>`
           : '—';
+        const safeHostname = encodeURIComponent(g.hostname);
+        const safeUrl = encodeURIComponent(g.pageUrl);
+        const safeCategory = encodeURIComponent(g.category || '');
+        const isComp = g.isCompetitor ? 1 : 0;
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><a href="https://${g.hostname}" target="_blank" rel="noopener" class="domain-link">${g.hostname}</a></td>
           <td>${pageLink}</td>
           <td>${categoryTag}</td>
           <td>${typeTag}</td>
+          <td><button class="draft-btn" onclick="draftEmail('${safeHostname}','${safeUrl}','${safeCategory}',${isComp})">✉ Draft email</button></td>
         `;
         tbody.appendChild(tr);
       }
@@ -442,6 +524,71 @@
         btn.textContent = '✓ Copied!';
         setTimeout(() => btn.textContent = orig, 2000);
       });
+    }
+
+    async function draftEmail(encodedHostname, encodedUrl, encodedCategory, isCompetitor) {
+      const hostname = decodeURIComponent(encodedHostname);
+      const pageUrl = decodeURIComponent(encodedUrl);
+      const category = decodeURIComponent(encodedCategory);
+
+      const modal = document.getElementById('emailModal');
+      const modalSub = document.getElementById('emailModalSub');
+      const modalBody = document.getElementById('emailModalBody');
+
+      modalSub.textContent = hostname;
+      modalBody.innerHTML = '<div class="modal-spinner"></div>';
+      modal.classList.remove('hidden');
+
+      try {
+        const res = await fetch('http://localhost:3456/draft-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client: currentClient,
+            focus: currentFocus,
+            hostname,
+            pageUrl,
+            category,
+            isCompetitor: !!isCompetitor
+          })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        modalBody.innerHTML = `
+          <div class="email-field">
+            <label>Subject line</label>
+            <div class="field-row">
+              <div class="field-text" id="emailSubject">${data.subject}</div>
+              <button class="copy-field-btn" onclick="copyField('emailSubject', this)">Copy</button>
+            </div>
+          </div>
+          <div class="email-field">
+            <label>Email body</label>
+            <div class="field-row">
+              <div class="field-text" id="emailBody">${data.body}</div>
+              <button class="copy-field-btn" onclick="copyField('emailBody', this)">Copy</button>
+            </div>
+          </div>
+        `;
+      } catch(e) {
+        modalBody.innerHTML = `<p style="color:#fca5a5;font-size:13px;">Could not generate draft: ${e.message}. Make sure the server is running.</p>`;
+      }
+    }
+
+    function copyField(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(() => btn.textContent = orig, 2000);
+      });
+    }
+
+    function closeEmailModal(e) {
+      if (e.target === document.getElementById('emailModal')) {
+        document.getElementById('emailModal').classList.add('hidden');
+      }
     }
 
     function downloadTxt() {
