@@ -922,31 +922,6 @@
 <body>
   <div class="container">
 
-    <!-- ── TOOL 2: PLACEMENT ANGLES ── -->
-    <div class="tool-title" style="margin-top:0; margin-bottom:6px;">Link Placement Angles</div>
-    <p class="subtitle">Paste a citation page and your target URL — get 3 natural placement suggestions</p>
-
-    <div class="placement-inputs">
-      <div class="input-group">
-        <label>Citation Page URL</label>
-        <input type="url" id="citationUrl" placeholder="https://agilitypr.com/article..." />
-      </div>
-      <div class="input-group">
-        <label>Your Target URL</label>
-        <input type="url" id="targetUrl" placeholder="https://air.inc/resources/..." />
-      </div>
-    </div>
-
-    <button class="run-btn" onclick="getSuggestions()" id="suggestBtn">Suggest Placement Angles</button>
-
-    <div class="loading" id="loadingBox">
-      <span class="spinner"></span> Reading both pages and thinking...
-    </div>
-    <div class="placement-error" id="placementError"></div>
-    <div class="angles" id="anglesBox"></div>
-
-    <hr class="divider" />
-
     <!-- ── GAP NETWORK CHECK (loaded from Strategy tool) ── -->
     <div class="gap-check-panel" id="gapCheckPanel">
       <div class="panel-header">
@@ -1164,6 +1139,32 @@
         </div>
       </div>
     </div>
+
+    <hr class="divider" />
+
+    <!-- ── TOOL 2: PLACEMENT ANGLES ── -->
+    <div class="tool-title" style="margin-bottom:6px;">Link Placement Angles</div>
+    <p class="subtitle">Paste a citation page and your target URL — get 3 natural placement suggestions</p>
+
+    <div class="placement-inputs">
+      <div class="input-group">
+        <label>Citation Page URL</label>
+        <input type="url" id="citationUrl" placeholder="https://agilitypr.com/article..." />
+      </div>
+      <div class="input-group">
+        <label>Your Target URL</label>
+        <input type="url" id="targetUrl" placeholder="https://air.inc/resources/..." />
+      </div>
+    </div>
+
+    <button class="run-btn" onclick="getSuggestions()" id="suggestBtn">Suggest Placement Angles</button>
+
+    <div class="loading" id="loadingBox">
+      <span class="spinner"></span> Reading both pages and thinking...
+    </div>
+    <div class="placement-error" id="placementError"></div>
+    <div class="angles" id="anglesBox"></div>
+
   </div>
 
   <script>
