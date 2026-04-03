@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Citation Profile Analyser</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #151c0b;
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: white;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; color: rgba(255,255,255,0.4); text-decoration: none;
+      margin-bottom: 28px; transition: color 0.2s;
+    }
+    .back-link:hover { color: #9ebe2e; }
+    h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 36px; }
+
+    .input-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(158,190,46,0.2);
+      border-radius: 16px; padding: 28px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 640px) { .input-card { grid-template-columns: 1fr; } }
+    .input-card.full { grid-template-columns: 1fr; }
+
+    .field label {
+      display: block; font-size: 11px; text-transform: uppercase;
+      letter-spacing: 1.5px; color: #9ebe2e; font-weight: 600; margin-bottom: 10px;
+    }
+    .field .optional { color: rgba(255,255,255,0.3); text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 11px; margin-left: 6px; }
+
+    select, input[type="text"] {
+      width: 100%; background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(158,190,46,0.25); border-radius: 8px;
+      color: white; font-family: 'DM Sans', sans-serif; font-size: 13px;
+      padding: 9px 12px; outline: none;
+    }
+    input[type="text"]::placeholder { color: rgba(255,255,255,0.25); }
+    input[type="text"]:focus, select:focus { border-color: rgba(158,190,46,0.6); }
+
+    .file-btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
+      background: rgba(40,60,10,0.25); border: 1px dashed rgba(158,190,46,0.4);
+      border-radius: 10px; color: #9ebe2e; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; width: 100%; justify-content: center;
+    }
+    .file-btn:hover { background: rgba(40,60,10,0.4); }
+    input[type="file"] { display: none; }
+    .file-name { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 8px; display: block; }
+
+    .run-btn {
+      width: 100%; padding: 16px;
+      background: #9ebe2e;
+      border: none; border-radius: 50px; color: #151c0b;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; margin-bottom: 32px;
+    }
+    .run-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(40,60,10,0.4); }
+    .run-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .error {
+      background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4);
+      border-radius: 10px; color: #fca5a5; font-size: 13px;
+      padding: 12px 16px; margin-bottom: 20px; display: none;
+    }
+
+    .loading { text-align: center; padding: 60px 20px; display: none; }
+    .spinner {
+      width: 40px; height: 40px; border: 3px solid rgba(158,190,46,0.2);
+      border-top-color: #9ebe2e; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading p { color: rgba(255,255,255,0.5); font-size: 14px; }
+
+    .results { display: none; }
+
+    /* Stat tiles */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    @media (max-width: 600px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    .stat {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(158,190,46,0.2);
+      border-radius: 14px; padding: 18px; text-align: center;
+    }
+    .stat-num { font-size: 30px; font-weight: 700; margin-bottom: 4px; }
+    .stat-num.purple { color: #9ebe2e; }
+    .stat-num.green  { color: #4ade80; }
+    .stat-num.blue   { color: #60a5fa; }
+    .stat-num.orange { color: #fb923c; }
+    .stat-label { font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Category breakdown */
+    .breakdown {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(158,190,46,0.15);
+      border-radius: 16px; padding: 24px; margin-bottom: 24px;
+    }
+    .breakdown-title {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.5px; color: rgba(255,255,255,0.5); margin-bottom: 16px;
+    }
+    .bar-row { margin-bottom: 12px; }
+    .bar-label {
+      display: flex; justify-content: space-between;
+      font-size: 13px; margin-bottom: 5px;
+    }
+    .bar-label span:first-child { color: white; font-weight: 600; }
+    .bar-label span:last-child { color: rgba(255,255,255,0.4); font-size: 12px; }
+    .bar-track {
+      background: rgba(255,255,255,0.07); border-radius: 4px; height: 6px;
+    }
+    .bar-fill {
+      height: 6px; border-radius: 4px;
+      background: #9ebe2e;
+      transition: width 0.6s ease;
+    }
+
+    /* Section title */
+    .section-title {
+      font-size: 14px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.5px; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot.purple { background: #9ebe2e; }
+    .dot.blue   { background: #60a5fa; }
+    .dot.green  { background: #4ade80; }
+
+    /* AI analysis */
+    .analysis-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(158,190,46,0.2);
+      border-radius: 16px; padding: 28px 32px; margin-bottom: 28px; line-height: 1.7;
+    }
+    .analysis-card h3 {
+      font-size: 14px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.2px; color: #9ebe2e; margin: 24px 0 10px;
+    }
+    .analysis-card h3:first-child { margin-top: 0; }
+    .analysis-card p { font-size: 14px; color: rgba(255,255,255,0.85); margin-bottom: 10px; }
+    .analysis-card ul, .analysis-card ol { padding-left: 20px; margin-bottom: 10px; }
+    .analysis-card li { font-size: 14px; color: rgba(255,255,255,0.85); margin-bottom: 8px; }
+    .analysis-card strong { color: white; }
+    .analysis-card a { color: #9ebe2e; text-decoration: none; }
+    .analysis-card a:hover { text-decoration: underline; }
+
+    /* Pages table */
+    .table-wrap { overflow-x: auto; margin-bottom: 32px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
+    th {
+      text-align: left; padding: 10px 14px;
+      background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5);
+      font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    }
+    th:first-child { border-radius: 8px 0 0 8px; }
+    th:last-child  { border-radius: 0 8px 8px 0; }
+    td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+    .page-link { color: #9ebe2e; text-decoration: none; font-size: 12px; }
+    .page-link:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block; padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+      background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.55);
+    }
+    .tag.green  { background: rgba(74,222,128,0.15);  color: #4ade80; }
+    .tag.orange { background: rgba(251,191,36,0.15);   color: #fbbf24; }
+    .tag.red    { background: rgba(248,113,113,0.15);  color: #f87171; }
+
+    .show-more-btn {
+      background: none; border: 1px solid rgba(158,190,46,0.3);
+      color: #9ebe2e; font-size: 13px; font-weight: 600;
+      border-radius: 8px; padding: 8px 20px; cursor: pointer;
+      display: block; margin: 0 auto 32px; transition: all 0.2s;
+    }
+    .show-more-btn:hover { background: rgba(158,190,46,0.1); }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+
+    <h1>Citation Profile Analyser</h1>
+    <p class="subtitle">Upload a Profound CSV to get a full breakdown of where a client stands — and exactly what to do next</p>
+
+    <div class="input-card">
+      <div class="field">
+        <label>Client</label>
+        <select id="clientSelect">
+          <option value="">— Select or type below —</option>
+          <option value="ShipBob">ShipBob</option>
+          <option value="Matterport">Matterport</option>
+          <option value="Air">Air</option>
+          <option value="EasyLlama">EasyLlama</option>
+          <option value="Profound">Profound</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Client name <span class="optional">— if not in list above</span></label>
+        <input type="text" id="clientName" placeholder="e.g. Acme Corp" />
+      </div>
+      <div class="field">
+        <label>Profound CSV</label>
+        <label class="file-btn" for="csvFile">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload CSV
+        </label>
+        <input type="file" id="csvFile" accept=".csv" />
+        <span class="file-name" id="fileName">No file chosen</span>
+      </div>
+      <div class="field">
+        <label>Client description <span class="optional">— optional, helps the AI</span></label>
+        <input type="text" id="clientDesc" placeholder="e.g. AI compliance training platform for enterprises" />
+      </div>
+    </div>
+
+    <div class="error" id="errorBox"></div>
+    <button class="run-btn" id="runBtn" onclick="run()">Analyse Citation Profile</button>
+
+    <div class="loading" id="loadingBox">
+      <div class="spinner"></div>
+      <p>Analysing the citation profile — usually about 20 seconds...</p>
+    </div>
+
+    <div class="results" id="results">
+
+      <!-- Stat tiles -->
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-num purple" id="statTotal">0</div>
+          <div class="stat-label">Total Pages</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num green" id="statMentioned">0</div>
+          <div class="stat-label">Client Cited</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num orange" id="statGaps">0</div>
+          <div class="stat-label">Not Cited</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num blue" id="statRate">0%</div>
+          <div class="stat-label">Citation Rate</div>
+        </div>
+      </div>
+
+      <!-- Category breakdown -->
+      <div class="breakdown" id="breakdownCard">
+        <div class="breakdown-title">Citation breakdown by category</div>
+        <div id="breakdownBars"></div>
+      </div>
+
+      <!-- AI analysis -->
+      <div class="section-title">
+        <div class="dot purple"></div>
+        AI Analysis & Recommendations
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button onclick="copyAnalysis()" id="copyAnalysisBtn" style="background:none;border:1px solid rgba(158,190,46,0.3);color:#9ebe2e;font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;" onmouseover="this.style.background='rgba(158,190,46,0.1)'" onmouseout="this.style.background='none'">Copy analysis</button>
+      </div>
+      <div class="analysis-card" id="analysisCard">
+        <div class="spinner" style="margin: 20px auto;"></div>
+      </div>
+
+      <!-- Pages table -->
+      <div class="section-title">
+        <div class="dot blue"></div>
+        All Citation Pages
+      </div>
+      <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:14px;">
+        <span class="tag green">mentioned</span> &nbsp;
+        <span class="tag orange">not mentioned</span> &nbsp;
+        <span class="tag red">undetected</span>
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Domain</th>
+              <th>Page</th>
+              <th>Category</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="pagesBody"></tbody>
+        </table>
+      </div>
+      <button class="show-more-btn" id="showMoreBtn" style="display:none;" onclick="showMore()">Show more ↓</button>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:24px;">
+        <button onclick="exportPagesCSV()" style="background:none;border:1px solid rgba(158,190,46,0.3);color:#9ebe2e;font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;" onmouseover="this.style.background='rgba(158,190,46,0.1)'" onmouseout="this.style.background='none'">↓ Export pages CSV</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let csvText = null;
+    let allRows = [];
+    let shown = 0;
+    const PAGE = 30;
+
+    document.getElementById('csvFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('fileName').textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = ev => { csvText = ev.target.result; };
+      reader.readAsText(file);
+    });
+
+    function extractDomain(url) {
+      try { return url.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase(); }
+      catch { return url.toLowerCase(); }
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split('\n').filter(l => l.trim());
+      if (!lines.length) return { rows: [], headers: [] };
+      const sep = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(sep).map(h => h.replace(/"/g, '').trim().toLowerCase());
+      const rows = lines.slice(1).map(line => {
+        const cols = line.split(sep).map(c => c.replace(/"/g, '').trim());
+        const row = {};
+        headers.forEach((h, i) => row[h] = cols[i] || '');
+        return row;
+      });
+      return { rows, headers };
+    }
+
+    function mentionStatus(val) {
+      const v = (val || '').toLowerCase().trim();
+      if (v === 'mentioned') return 'mentioned';
+      if (v === 'not mentioned') return 'not mentioned';
+      if (v === 'undetected') return 'undetected';
+      return v || 'unknown';
+    }
+
+    async function run() {
+      document.getElementById('errorBox').style.display = 'none';
+      document.getElementById('results').style.display = 'none';
+
+      if (!csvText) { showError('Please upload a Profound CSV first.'); return; }
+
+      const clientSelect = document.getElementById('clientSelect').value;
+      const clientName = document.getElementById('clientName').value.trim();
+      const client = clientSelect || clientName;
+      const clientDesc = document.getElementById('clientDesc').value.trim();
+
+      const { rows, headers } = parseCSV(csvText);
+      if (!rows.length) { showError('Could not read the CSV — please check it is a valid Profound export.'); return; }
+      if (!headers.includes('mentioned')) {
+        showError('Could not find a "mentioned" column. Headers found: ' + headers.join(', '));
+        return;
+      }
+
+      // Parse rows
+      const parsed = rows.map(row => ({
+        hostname: row.hostname || extractDomain(row.url || row.page || ''),
+        pageUrl:  row.url || row.page || '',
+        category: row.category || row.mediatype || '',
+        status:   mentionStatus(row.mentioned),
+        share:    row.citationshare || row.share || '',
+      })).filter(r => r.hostname);
+
+      // Stats
+      const total      = parsed.length;
+      const mentioned  = parsed.filter(r => r.status === 'mentioned').length;
+      const gaps       = parsed.filter(r => r.status === 'not mentioned' || r.status === 'undetected').length;
+      const rate       = total > 0 ? Math.round((mentioned / total) * 100) : 0;
+
+      document.getElementById('statTotal').textContent     = total.toLocaleString();
+      document.getElementById('statMentioned').textContent = mentioned.toLocaleString();
+      document.getElementById('statGaps').textContent      = gaps.toLocaleString();
+      document.getElementById('statRate').textContent      = rate + '%';
+
+      // Category breakdown
+      const catMap = {};
+      parsed.forEach(r => {
+        const cat = r.category || 'Unknown';
+        if (!catMap[cat]) catMap[cat] = { total: 0, mentioned: 0 };
+        catMap[cat].total++;
+        if (r.status === 'mentioned') catMap[cat].mentioned++;
+      });
+      const sortedCats = Object.entries(catMap).sort((a, b) => b[1].total - a[1].total);
+      const maxCatTotal = sortedCats[0]?.[1].total || 1;
+      const barsEl = document.getElementById('breakdownBars');
+      barsEl.innerHTML = '';
+      sortedCats.slice(0, 8).forEach(([cat, data]) => {
+        const pct = Math.round((data.mentioned / data.total) * 100);
+        const width = Math.round((data.total / maxCatTotal) * 100);
+        barsEl.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>${cat}</span>
+              <span>${data.mentioned} / ${data.total} cited (${pct}%)</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
+          </div>`;
+      });
+
+      // Pages table
+      allRows = parsed;
+      shown = 0;
+      document.getElementById('pagesBody').innerHTML = '';
+      renderRows(Math.min(PAGE, allRows.length));
+      document.getElementById('showMoreBtn').style.display = allRows.length > PAGE ? 'block' : 'none';
+
+      // Show results (with spinner in analysis card while AI loads)
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+
+      // Call AI
+      const btn = document.getElementById('runBtn');
+      btn.disabled = true;
+      document.getElementById('loadingBox').style.display = 'block';
+      document.getElementById('analysisCard').innerHTML = '<div class="spinner" style="margin:20px auto;"></div>';
+
+      // Build summary for AI
+      const catSummary = sortedCats.slice(0, 10).map(([cat, d]) => {
+        const pct = Math.round((d.mentioned / d.total) * 100);
+        return `${cat}: ${d.mentioned}/${d.total} cited (${pct}%)`;
+      }).join('\n');
+
+      const sampleGaps = parsed.filter(r => r.status !== 'mentioned').slice(0, 40)
+        .map(r => `- ${r.hostname} | ${r.pageUrl} | ${r.category}`).join('\n');
+
+      const sampleCited = parsed.filter(r => r.status === 'mentioned').slice(0, 20)
+        .map(r => `- ${r.hostname} | ${r.category}`).join('\n');
+
+      try {
+        const res = await fetch('http://localhost:3456/analyse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client: client || 'the client',
+            clientDesc,
+            total, mentioned, gaps, rate,
+            catSummary,
+            sampleGaps,
+            sampleCited
+          })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        document.getElementById('analysisCard').innerHTML = data.analysis;
+      } catch(e) {
+        document.getElementById('analysisCard').innerHTML =
+          `<p style="color:#fca5a5;">Could not generate AI analysis: ${e.message}</p>`;
+      }
+
+      document.getElementById('loadingBox').style.display = 'none';
+      btn.disabled = false;
+    }
+
+    function renderRows(upTo) {
+      const tbody = document.getElementById('pagesBody');
+      for (let i = shown; i < upTo && i < allRows.length; i++) {
+        const r = allRows[i];
+        const tagClass = r.status === 'mentioned' ? 'green' : r.status === 'undetected' ? 'red' : 'orange';
+        const pageLink = r.pageUrl
+          ? `<a href="https://${r.pageUrl.replace(/^https?:\/\//, '')}" target="_blank" rel="noopener" class="page-link">${r.pageUrl.length > 60 ? r.pageUrl.slice(0, 60) + '…' : r.pageUrl} ↗</a>`
+          : r.hostname;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight:600;color:white;">${r.hostname}</td>
+          <td>${pageLink}</td>
+          <td><span class="tag">${r.category || '—'}</span></td>
+          <td><span class="tag ${tagClass}">${r.status}</span></td>`;
+        tbody.appendChild(tr);
+      }
+      shown = upTo;
+    }
+
+    function showMore() {
+      const next = Math.min(shown + PAGE, allRows.length);
+      renderRows(next);
+      if (shown >= allRows.length) document.getElementById('showMoreBtn').style.display = 'none';
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('errorBox');
+      box.textContent = msg;
+      box.style.display = 'block';
+    }
+
+    function exportPagesCSV() {
+      if (!allRows.length) return;
+      const rows = [['Domain','Page URL','Category','Status']];
+      allRows.forEach(r => rows.push([r.hostname, r.pageUrl, r.category, r.status]));
+      downloadCSV(rows, 'citation-profile.csv');
+    }
+
+    function copyAnalysis() {
+      const text = document.getElementById('analysisCard').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyAnalysisBtn');
+        const orig = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => btn.textContent = orig, 2000);
+      });
+    }
+
+    function downloadCSV(rows, filename) {
+      const csv = rows.map(r => r.map(c => `"${(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+      const a = document.createElement('a');
+      a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+      a.download = filename;
+      a.click();
+    }
+  </script>
+  <script src="/nav.js"></script>
+</body>
+</html>
