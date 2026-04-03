@@ -260,6 +260,29 @@
       transition: all 0.15s;
     }
     .session-clear:hover { border-color: #f87171; color: #f87171; }
+
+    /* Mode toggle */
+    .mode-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
+    .mode-btn {
+      flex: 1; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 600;
+      border: 1px solid rgba(158,190,46,0.2); background: rgba(255,255,255,0.03);
+      color: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.18s;
+      font-family: 'DM Sans', sans-serif; text-align: center;
+    }
+    .mode-btn:hover { border-color: rgba(158,190,46,0.4); color: rgba(255,255,255,0.7); }
+    .mode-btn.active { border-color: #9ebe2e; color: white; background: rgba(158,190,46,0.1); }
+    .mode-btn small { display: block; font-size: 11px; font-weight: 400; color: inherit; opacity: 0.7; margin-top: 2px; }
+
+    /* Section copy btn (injected into AI output) */
+    .section-copy-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      float: right; margin-top: 2px;
+      background: none; border: 1px solid rgba(158,190,46,0.25); border-radius: 6px;
+      color: rgba(158,190,46,0.7); font-size: 10px; font-weight: 600;
+      padding: 2px 8px; cursor: pointer; transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .section-copy-btn:hover { background: rgba(158,190,46,0.1); color: #9ebe2e; }
   </style>
 </head>
 <body>
@@ -284,6 +307,7 @@
           <option value="__new__">+ Add new client...</option>
         </select>
         <input type="text" id="newClientInput" placeholder="Type client name" style="display:none;width:100%;margin-top:10px;background:rgba(0,0,0,0.3);border:1px solid rgba(158,190,46,0.25);border-radius:8px;color:white;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 10px;outline:none;" />
+        <input type="text" id="newClientDesc" placeholder="Short description — e.g. AI compliance training for enterprises" style="display:none;width:100%;margin-top:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(158,190,46,0.15);border-radius:8px;color:rgba(255,255,255,0.7);font-family:'DM Sans',sans-serif;font-size:12px;padding:8px 10px;outline:none;" />
         <label class="file-btn" for="csvFile">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Upload Profound CSV
@@ -306,6 +330,17 @@
         <p class="hint">The AI will filter all gap recommendations through this goal and give you a sequenced action plan specific to it.</p>
       </div>
 
+    </div>
+
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeQuick" onclick="setMode('quick',this)">
+        Quick Wins
+        <small>Top 5 immediate actions · ~10 sec</small>
+      </button>
+      <button class="mode-btn" id="modeFull" onclick="setMode('full',this)">
+        Full Strategy
+        <small>Complete analysis + action plan · ~20 sec</small>
+      </button>
     </div>
 
     <div class="error" id="errorBox"></div>
@@ -383,9 +418,14 @@
         <div class="dot purple"></div>
         AI Strategy
       </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
-        <button onclick="downloadTxt()" style="background:none;border:1px solid rgba(158,190,46,0.3);color:#9ebe2e;font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;" onmouseover="this.style.background='rgba(158,190,46,0.1)'" onmouseout="this.style.background='none'">↓ Download .txt</button>
-        <button onclick="copyAnalysis('analysisCard','copyAnalysisBtn')" id="copyAnalysisBtn" style="background:none;border:1px solid rgba(158,190,46,0.3);color:#9ebe2e;font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;" onmouseover="this.style.background='rgba(158,190,46,0.1)'" onmouseout="this.style.background='none'">Copy analysis</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <a id="analyserLink" href="analysis.html" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.4);text-decoration:none;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 14px;transition:all 0.2s;" onmouseover="this.style.color='white';this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='rgba(255,255,255,0.4)';this.style.borderColor='rgba(255,255,255,0.1)'">
+          Open in Citation Analyser →
+        </a>
+        <div style="display:flex;gap:8px;">
+          <button onclick="downloadTxt()" style="background:none;border:1px solid rgba(158,190,46,0.3);color:#9ebe2e;font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;" onmouseover="this.style.background='rgba(158,190,46,0.1)'" onmouseout="this.style.background='none'">↓ Download .txt</button>
+          <button onclick="copyAnalysis('analysisCard','copyAnalysisBtn')" id="copyAnalysisBtn" style="background:none;border:1px solid rgba(158,190,46,0.3);color:#9ebe2e;font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;" onmouseover="this.style.background='rgba(158,190,46,0.1)'" onmouseout="this.style.background='none'">Copy all</button>
+        </div>
       </div>
       <div class="analysis-card" id="analysisCard"></div>
 
@@ -413,6 +453,7 @@
     let currentClient = '';
     let currentFocus = '';
     let activeTypeFilter = 'all';
+    let currentMode = 'quick';
 
     function parseShare(val) {
       if (!val) return 0;
@@ -427,11 +468,56 @@
       });
     }
 
+    function setMode(mode, btn) {
+      currentMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function getCustomClients() {
+      try { return JSON.parse(localStorage.getItem('ogm_custom_clients') || '[]'); } catch { return []; }
+    }
+
+    function saveCustomClient(name, desc) {
+      const clients = getCustomClients().filter(c => c.name.toLowerCase() !== name.toLowerCase());
+      clients.push({ name, desc });
+      localStorage.setItem('ogm_custom_clients', JSON.stringify(clients));
+    }
+
+    function loadCustomClientsIntoDropdown() {
+      const sel = document.getElementById('clientSelect');
+      // Remove previously injected custom options (before the __new__ option)
+      [...sel.options].forEach(o => { if (o.dataset.custom) o.remove(); });
+      const clients = getCustomClients();
+      const newOpt = sel.querySelector('option[value="__new__"]');
+      clients.forEach(c => {
+        const o = document.createElement('option');
+        o.value = '__custom__' + c.name;
+        o.textContent = c.name;
+        o.dataset.custom = '1';
+        sel.insertBefore(o, newOpt);
+      });
+    }
+
     function handleClientSelect() {
       const val = document.getElementById('clientSelect').value;
-      const input = document.getElementById('newClientInput');
-      input.style.display = val === '__new__' ? 'block' : 'none';
-      if (val === '__new__') input.focus();
+      const nameInput = document.getElementById('newClientInput');
+      const descInput = document.getElementById('newClientDesc');
+      const isNew = val === '__new__';
+      nameInput.style.display = isNew ? 'block' : 'none';
+      descInput.style.display = isNew ? 'block' : 'none';
+      if (isNew) { nameInput.focus(); return; }
+
+      // Load saved competitors for this client
+      const clientKey = val.startsWith('__custom__') ? val.slice(10).toLowerCase() : val.toLowerCase();
+      const saved = localStorage.getItem('ogm_competitors_' + clientKey);
+      if (saved) {
+        document.getElementById('competitorDomains').value = saved;
+      }
+
+      // Update Citation Analyser link
+      const displayName = val.startsWith('__custom__') ? val.slice(10) : val;
+      document.getElementById('analyserLink').href = 'analysis.html?client=' + encodeURIComponent(displayName);
     }
 
     document.getElementById('csvFile').addEventListener('change', function(e) {
@@ -473,12 +559,31 @@
       if (!competitorRaw) { showError('Please paste at least one competitor domain in Step 2.'); return; }
 
       const selectVal = document.getElementById('clientSelect').value;
-      const client = selectVal === '__new__'
-        ? document.getElementById('newClientInput').value.trim()
-        : selectVal;
+      let client, clientDesc = '';
+      if (selectVal === '__new__') {
+        client = document.getElementById('newClientInput').value.trim();
+        clientDesc = document.getElementById('newClientDesc').value.trim();
+        if (client) saveCustomClient(client, clientDesc);
+        loadCustomClientsIntoDropdown();
+      } else if (selectVal.startsWith('__custom__')) {
+        client = selectVal.slice(10);
+        const saved = getCustomClients().find(c => c.name.toLowerCase() === client.toLowerCase());
+        clientDesc = saved ? saved.desc : '';
+      } else {
+        client = selectVal;
+      }
       const focus = document.getElementById('focusInput').value.trim();
       currentClient = client;
       currentFocus = focus;
+
+      // Save competitor domains for this client
+      const competitorRawVal = document.getElementById('competitorDomains').value.trim();
+      if (client && competitorRawVal) {
+        localStorage.setItem('ogm_competitors_' + client.toLowerCase(), competitorRawVal);
+      }
+
+      // Update Citation Analyser link
+      if (client) document.getElementById('analyserLink').href = 'analysis.html?client=' + encodeURIComponent(client);
       const competitorDomains = new Set(
         competitorRaw.split('\n').map(d => extractDomain(d)).filter(Boolean)
       );
@@ -545,7 +650,9 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             client,
+            clientDesc,
             focus,
+            mode: currentMode,
             competitorDomains: [...competitorDomains],
             mentionedCount,
             gapPages: gapRows.slice(0, 60).map(g => ({
@@ -560,6 +667,7 @@
         if (data.error) throw new Error(data.error);
         const analysisHTML = data.analysis || '<p>No analysis returned.</p>';
         document.getElementById('analysisCard').innerHTML = analysisHTML;
+        addSectionCopyButtons();
         saveSession(mentionedCount, competitorGapCount, analysisHTML, client, focus);
       } catch(e) {
         document.getElementById('analysisCard').innerHTML = `<p style="color:#fca5a5;">Could not generate AI analysis: ${e.message}. Make sure the server is running.</p>`;
@@ -728,6 +836,29 @@
       }
     }
 
+    function addSectionCopyButtons() {
+      const card = document.getElementById('analysisCard');
+      card.querySelectorAll('h3').forEach(h3 => {
+        if (h3.querySelector('.section-copy-btn')) return;
+        const btn = document.createElement('button');
+        btn.className = 'section-copy-btn';
+        btn.textContent = 'Copy';
+        btn.onclick = function() {
+          let text = h3.innerText.replace('Copy','').trim() + '\n\n';
+          let el = h3.nextElementSibling;
+          while (el && el.tagName !== 'H3') {
+            text += el.innerText + '\n';
+            el = el.nextElementSibling;
+          }
+          navigator.clipboard.writeText(text.trim()).then(() => {
+            btn.textContent = '✓';
+            setTimeout(() => btn.textContent = 'Copy', 2000);
+          });
+        };
+        h3.appendChild(btn);
+      });
+    }
+
     function saveSession(mentionedCount, competitorGapCount, analysisHTML, client, focus) {
       try {
         localStorage.setItem('strategy_last_result', JSON.stringify({
@@ -752,6 +883,7 @@
         document.getElementById('statGaps').textContent = s.gaps.length;
         document.getElementById('statCompetitor').textContent = s.competitorGapCount || 0;
         document.getElementById('analysisCard').innerHTML = s.analysisHTML || '';
+        addSectionCopyButtons();
 
         const date = new Date(s.savedAt);
         const label = date.toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
@@ -789,6 +921,7 @@
       a.click();
     }
 
+    loadCustomClientsIntoDropdown();
     loadSession();
   </script>
   <script src="/nav.js"></script>
