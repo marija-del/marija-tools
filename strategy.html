@@ -410,7 +410,11 @@
         </table>
       </div>
       <button class="show-more-btn" id="showMoreBtn" style="display:none;" onclick="showMore()">Show more ↓</button>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:8px;">
+        <button onclick="checkInCrossChecker()" style="display:inline-flex;align-items:center;gap:6px;background:rgba(158,190,46,0.1);border:1px solid rgba(158,190,46,0.4);color:#9ebe2e;font-size:12px;font-weight:700;border-radius:8px;padding:8px 16px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='rgba(158,190,46,0.18)'" onmouseout="this.style.background='rgba(158,190,46,0.1)'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Check gaps against my network
+        </button>
         <button onclick="exportGapsCSV()" style="background:none;border:1px solid rgba(158,190,46,0.3);color:#9ebe2e;font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;" onmouseover="this.style.background='rgba(158,190,46,0.1)'" onmouseout="this.style.background='none'">↓ Export gaps CSV</button>
       </div>
 
@@ -752,6 +756,17 @@
       const box = document.getElementById('errorBox');
       box.textContent = msg;
       box.style.display = 'block';
+    }
+
+    function checkInCrossChecker() {
+      if (!allGaps.length) return;
+      const hostnames = [...new Set(allGaps.map(g => g.hostname))];
+      localStorage.setItem('strategy_gaps_for_crosscheck', JSON.stringify({
+        hostnames,
+        client: currentClient,
+        total: allGaps.length
+      }));
+      window.location.href = 'crosscheck.html';
     }
 
     function exportGapsCSV() {
