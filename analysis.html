@@ -318,6 +318,19 @@
     let shown = 0;
     const PAGE = 30;
 
+    // Pre-select client from URL param e.g. analysis.html?client=EasyLlama
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const clientParam = params.get('client');
+      if (!clientParam) return;
+      const sel = document.getElementById('clientSelect');
+      // Try matching an existing option
+      const match = [...sel.options].find(o => o.value.toLowerCase() === clientParam.toLowerCase());
+      if (match) { sel.value = match.value; return; }
+      // Otherwise fill the free-text name field
+      document.getElementById('clientName').value = clientParam;
+    })();
+
     document.getElementById('csvFile').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
