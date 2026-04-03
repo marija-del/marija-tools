@@ -250,7 +250,8 @@
         <div class="dot purple"></div>
         AI Strategy
       </div>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
+        <button onclick="downloadTxt()" style="background:none;border:1px solid rgba(158,190,46,0.3);color:#9ebe2e;font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;" onmouseover="this.style.background='rgba(158,190,46,0.1)'" onmouseout="this.style.background='none'">↓ Download .txt</button>
         <button onclick="copyAnalysis('analysisCard','copyAnalysisBtn')" id="copyAnalysisBtn" style="background:none;border:1px solid rgba(158,190,46,0.3);color:#9ebe2e;font-size:12px;font-weight:600;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;" onmouseover="this.style.background='rgba(158,190,46,0.1)'" onmouseout="this.style.background='none'">Copy analysis</button>
       </div>
       <div class="analysis-card" id="analysisCard"></div>
@@ -441,6 +442,15 @@
         btn.textContent = '✓ Copied!';
         setTimeout(() => btn.textContent = orig, 2000);
       });
+    }
+
+    function downloadTxt() {
+      const text = document.getElementById('analysisCard').innerText;
+      if (!text.trim()) return;
+      const a = document.createElement('a');
+      a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+      a.download = 'strategy.txt';
+      a.click();
     }
 
     function downloadCSV(rows, filename) {
