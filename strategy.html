@@ -209,6 +209,57 @@
       font-family: 'DM Sans', sans-serif;
     }
     .draft-btn:hover { background: rgba(40,60,10,0.4); }
+
+    /* Priority badges */
+    .priority { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .priority-high   { background: rgba(158,190,46,0.15); color: #9ebe2e; border: 1px solid rgba(158,190,46,0.35); }
+    .priority-medium { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    .priority-low    { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.1); }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .filter-search {
+      flex: 1; min-width: 160px; background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(158,190,46,0.2); border-radius: 8px;
+      color: white; font-family: 'DM Sans', sans-serif; font-size: 12px;
+      padding: 7px 12px; outline: none;
+    }
+    .filter-search:focus { border-color: rgba(158,190,46,0.5); }
+    .filter-search::placeholder { color: rgba(255,255,255,0.25); }
+    .filter-pills { display: flex; gap: 6px; }
+    .filter-pill {
+      padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.12); background: transparent;
+      color: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .filter-pill:hover { border-color: rgba(158,190,46,0.4); color: rgba(255,255,255,0.7); }
+    .filter-pill.active { border-color: #9ebe2e; color: #9ebe2e; background: rgba(158,190,46,0.08); }
+    .filter-cat {
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(158,190,46,0.2);
+      border-radius: 8px; color: rgba(255,255,255,0.6); font-family: 'DM Sans', sans-serif;
+      font-size: 12px; padding: 6px 10px; outline: none; cursor: pointer;
+    }
+    .filter-count { font-size: 12px; color: rgba(255,255,255,0.35); margin-left: auto; white-space: nowrap; }
+
+    /* Session banner */
+    .session-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(158,190,46,0.07); border: 1px solid rgba(158,190,46,0.2);
+      border-radius: 10px; padding: 10px 16px; margin-bottom: 24px; font-size: 12px;
+    }
+    .session-banner span { color: rgba(255,255,255,0.6); }
+    .session-banner strong { color: #9ebe2e; }
+    .session-clear {
+      background: none; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;
+      color: rgba(255,255,255,0.4); font-size: 11px; font-weight: 600;
+      padding: 4px 10px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+    .session-clear:hover { border-color: #f87171; color: #f87171; }
   </style>
 </head>
 <body>
@@ -265,6 +316,11 @@
       <p>Analysing gaps and building your strategy — usually about 20 seconds...</p>
     </div>
 
+    <div id="sessionBanner" style="display:none;" class="session-banner">
+      <span>Showing results from your <strong id="sessionLabel">last session</strong></span>
+      <button class="session-clear" onclick="clearSession()">Clear</button>
+    </div>
+
     <div class="results" id="results">
 
       <div class="summary">
@@ -290,10 +346,24 @@
         <span style="color:#f87171;font-weight:600;">Red = competitor's own site</span> &nbsp;·&nbsp;
         <span style="color:#60a5fa;font-weight:600;">Blue = third-party page</span> (listicle, comparison, etc.)
       </p>
+      <div class="filter-bar">
+        <input class="filter-search" id="searchInput" type="text" placeholder="🔍  Search domain..." oninput="applyFilters()" />
+        <div class="filter-pills">
+          <button class="filter-pill active" onclick="setTypeFilter('all',this)">All</button>
+          <button class="filter-pill" onclick="setTypeFilter('thirdparty',this)">Third-party</button>
+          <button class="filter-pill" onclick="setTypeFilter('competitor',this)">Competitor</button>
+        </div>
+        <select class="filter-cat" id="categoryFilter" onchange="applyFilters()">
+          <option value="">All categories</option>
+        </select>
+        <span class="filter-count" id="filterCount"></span>
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th>Priority</th>
               <th>Domain</th>
               <th>Citation Page</th>
               <th>Category</th>
@@ -337,10 +407,25 @@
   <script>
     let csvText = null;
     let allGaps = [];
+    let filteredGaps = [];
     let shown = 0;
     const PAGE = 25;
     let currentClient = '';
     let currentFocus = '';
+    let activeTypeFilter = 'all';
+
+    function parseShare(val) {
+      if (!val) return 0;
+      return parseFloat(String(val).replace('%','').trim()) || 0;
+    }
+
+    function assignPriorities(gaps) {
+      const n = gaps.length;
+      gaps.forEach((g, i) => {
+        const pct = n <= 1 ? 0 : i / (n - 1);
+        g.priority = pct < 0.25 ? 'High' : pct < 0.75 ? 'Medium' : 'Low';
+      });
+    }
 
     function handleClientSelect() {
       const val = document.getElementById('clientSelect').value;
@@ -431,6 +516,10 @@
       });
 
 
+      // Sort by citation share descending, then assign priority labels
+      gapRows.sort((a, b) => parseShare(b.share) - parseShare(a.share));
+      assignPriorities(gapRows);
+
       allGaps = gapRows;
       shown = 0;
 
@@ -440,9 +529,8 @@
       document.getElementById('statGaps').textContent = gapRows.length;
       document.getElementById('statCompetitor').textContent = competitorGapCount;
 
-      document.getElementById('gapBody').innerHTML = '';
-      renderRows(Math.min(PAGE, allGaps.length));
-      document.getElementById('showMoreBtn').style.display = allGaps.length > PAGE ? 'block' : 'none';
+      populateCategoryFilter(gapRows);
+      applyFilters();
 
       // Call server for AI analysis
       const btn = document.getElementById('runBtn');
@@ -470,7 +558,9 @@
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
-        document.getElementById('analysisCard').innerHTML = data.analysis || '<p>No analysis returned.</p>';
+        const analysisHTML = data.analysis || '<p>No analysis returned.</p>';
+        document.getElementById('analysisCard').innerHTML = analysisHTML;
+        saveSession(mentionedCount, competitorGapCount, analysisHTML, client, focus);
       } catch(e) {
         document.getElementById('analysisCard').innerHTML = `<p style="color:#fca5a5;">Could not generate AI analysis: ${e.message}. Make sure the server is running.</p>`;
       }
@@ -481,8 +571,8 @@
 
     function renderRows(upTo) {
       const tbody = document.getElementById('gapBody');
-      for (let i = shown; i < upTo && i < allGaps.length; i++) {
-        const g = allGaps[i];
+      for (let i = shown; i < upTo && i < filteredGaps.length; i++) {
+        const g = filteredGaps[i];
         const typeTag = g.isCompetitor
           ? '<span class="tag tag-competitor">Competitor site</span>'
           : '<span class="tag tag-thirdparty">Third-party</span>';
@@ -496,8 +586,10 @@
         const safeUrl = encodeURIComponent(g.pageUrl);
         const safeCategory = encodeURIComponent(g.category || '');
         const isComp = g.isCompetitor ? 1 : 0;
+        const pClass = g.priority === 'High' ? 'priority-high' : g.priority === 'Medium' ? 'priority-medium' : 'priority-low';
         const tr = document.createElement('tr');
         tr.innerHTML = `
+          <td><span class="priority ${pClass}">${g.priority || '—'}</span></td>
           <td><a href="https://${g.hostname}" target="_blank" rel="noopener" class="domain-link">${g.hostname}</a></td>
           <td>${pageLink}</td>
           <td>${categoryTag}</td>
@@ -510,9 +602,42 @@
     }
 
     function showMore() {
-      const next = Math.min(shown + PAGE, allGaps.length);
+      const next = Math.min(shown + PAGE, filteredGaps.length);
       renderRows(next);
-      if (shown >= allGaps.length) document.getElementById('showMoreBtn').style.display = 'none';
+      if (shown >= filteredGaps.length) document.getElementById('showMoreBtn').style.display = 'none';
+    }
+
+    function setTypeFilter(type, btn) {
+      activeTypeFilter = type;
+      document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilters();
+    }
+
+    function populateCategoryFilter(gaps) {
+      const cats = [...new Set(gaps.map(g => g.category).filter(Boolean))].sort();
+      const sel = document.getElementById('categoryFilter');
+      sel.innerHTML = '<option value="">All categories</option>';
+      cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
+    }
+
+    function applyFilters() {
+      const search = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+      const cat = document.getElementById('categoryFilter').value;
+      filteredGaps = allGaps.filter(g => {
+        if (search && !g.hostname.includes(search)) return false;
+        if (cat && g.category !== cat) return false;
+        if (activeTypeFilter === 'thirdparty' && g.isCompetitor) return false;
+        if (activeTypeFilter === 'competitor' && !g.isCompetitor) return false;
+        return true;
+      });
+      shown = 0;
+      document.getElementById('gapBody').innerHTML = '';
+      renderRows(Math.min(PAGE, filteredGaps.length));
+      document.getElementById('showMoreBtn').style.display = filteredGaps.length > PAGE ? 'block' : 'none';
+      document.getElementById('filterCount').textContent = filteredGaps.length < allGaps.length
+        ? `${filteredGaps.length} of ${allGaps.length} gaps`
+        : `${allGaps.length} gaps`;
     }
 
     function showError(msg) {
@@ -523,8 +648,8 @@
 
     function exportGapsCSV() {
       if (!allGaps.length) return;
-      const rows = [['Domain','Page URL','Category','Type']];
-      allGaps.forEach(g => rows.push([g.hostname, g.pageUrl, g.category, g.isCompetitor ? 'Competitor site' : 'Third-party']));
+      const rows = [['Priority','Domain','Page URL','Category','Type']];
+      allGaps.forEach(g => rows.push([g.priority || '', g.hostname, g.pageUrl, g.category, g.isCompetitor ? 'Competitor site' : 'Third-party']));
       downloadCSV(rows, 'gap-analysis.csv');
     }
 
@@ -603,6 +728,50 @@
       }
     }
 
+    function saveSession(mentionedCount, competitorGapCount, analysisHTML, client, focus) {
+      try {
+        localStorage.setItem('strategy_last_result', JSON.stringify({
+          gaps: allGaps, mentionedCount, competitorGapCount,
+          analysisHTML, client, focus, savedAt: new Date().toISOString()
+        }));
+      } catch(e) {}
+    }
+
+    function loadSession() {
+      try {
+        const raw = localStorage.getItem('strategy_last_result');
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (!s.gaps || !s.gaps.length) return;
+
+        allGaps = s.gaps;
+        currentClient = s.client || '';
+        currentFocus = s.focus || '';
+
+        document.getElementById('statMentioned').textContent = s.mentionedCount || 0;
+        document.getElementById('statGaps').textContent = s.gaps.length;
+        document.getElementById('statCompetitor').textContent = s.competitorGapCount || 0;
+        document.getElementById('analysisCard').innerHTML = s.analysisHTML || '';
+
+        const date = new Date(s.savedAt);
+        const label = date.toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        document.getElementById('sessionLabel').textContent = `session saved ${label}${s.client ? ' · ' + s.client : ''}`;
+        document.getElementById('sessionBanner').style.display = 'flex';
+
+        populateCategoryFilter(allGaps);
+        applyFilters();
+        document.getElementById('results').style.display = 'block';
+      } catch(e) {}
+    }
+
+    function clearSession() {
+      localStorage.removeItem('strategy_last_result');
+      document.getElementById('sessionBanner').style.display = 'none';
+      document.getElementById('results').style.display = 'none';
+      allGaps = [];
+      filteredGaps = [];
+    }
+
     function downloadTxt() {
       const text = document.getElementById('analysisCard').innerText;
       if (!text.trim()) return;
@@ -619,6 +788,8 @@
       a.download = filename;
       a.click();
     }
+
+    loadSession();
   </script>
   <script src="/nav.js"></script>
 </body>
