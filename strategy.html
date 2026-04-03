@@ -223,14 +223,16 @@
       <div class="step">
         <div class="step-label">Step 1</div>
         <h2>Client + Profound CSV</h2>
-        <select id="clientSelect">
+        <select id="clientSelect" onchange="handleClientSelect()">
           <option value="">— Select client —</option>
           <option value="shipbob">ShipBob</option>
           <option value="matterport">Matterport</option>
           <option value="air">Air</option>
           <option value="easyllama">EasyLlama</option>
           <option value="profound">Profound</option>
+          <option value="__new__">+ Add new client...</option>
         </select>
+        <input type="text" id="newClientInput" placeholder="Type client name" style="display:none;width:100%;margin-top:10px;background:rgba(0,0,0,0.3);border:1px solid rgba(158,190,46,0.25);border-radius:8px;color:white;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 10px;outline:none;" />
         <label class="file-btn" for="csvFile">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Upload Profound CSV
@@ -340,6 +342,13 @@
     let currentClient = '';
     let currentFocus = '';
 
+    function handleClientSelect() {
+      const val = document.getElementById('clientSelect').value;
+      const input = document.getElementById('newClientInput');
+      input.style.display = val === '__new__' ? 'block' : 'none';
+      if (val === '__new__') input.focus();
+    }
+
     document.getElementById('csvFile').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -378,7 +387,10 @@
       const competitorRaw = document.getElementById('competitorDomains').value.trim();
       if (!competitorRaw) { showError('Please paste at least one competitor domain in Step 2.'); return; }
 
-      const client = document.getElementById('clientSelect').value;
+      const selectVal = document.getElementById('clientSelect').value;
+      const client = selectVal === '__new__'
+        ? document.getElementById('newClientInput').value.trim()
+        : selectVal;
       const focus = document.getElementById('focusInput').value.trim();
       currentClient = client;
       currentFocus = focus;
