@@ -982,16 +982,18 @@
       <div class="step">
         <div class="step-label">Step 2</div>
         <h2>Your homie network</h2>
-        <input
-          type="url"
-          id="sheetUrl"
-          placeholder="Paste Google Sheet published CSV URL..."
-          style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(158,190,46,0.25);border-radius:10px;color:white;font-family:'DM Sans',sans-serif;font-size:12px;padding:10px 12px;outline:none;margin-bottom:8px;box-sizing:border-box;"
-        />
-        <button class="file-btn" id="loadSheetBtn" onclick="loadFromSheet()" style="margin-bottom:10px; border-style:solid; width:100%; justify-content:center;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <span id="loadSheetLabel">Load from Google Sheet</span>
-        </button>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input
+            type="text"
+            id="sheetUrl"
+            placeholder="Paste any Google Sheet URL here..."
+            style="flex:1;background:rgba(0,0,0,0.3);border:1px solid rgba(158,190,46,0.25);border-radius:10px;color:white;font-family:'DM Sans',sans-serif;font-size:12px;padding:10px 12px;outline:none;box-sizing:border-box;"
+          />
+          <button class="file-btn" id="loadSheetBtn" onclick="loadFromSheet()" style="border-style:solid;white-space:nowrap;padding:0 16px;">
+            <span id="loadSheetLabel">Load Sheet</span>
+          </button>
+        </div>
+        <div id="networkStatus" style="font-size:12px;color:#9ebe2e;margin-bottom:8px;display:none;"></div>
         <textarea id="networkInput" placeholder="Or paste domains manually, one per line..."></textarea>
       </div>
     </div>
@@ -1233,37 +1235,67 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       initGapCheck();
-      const saved = localStorage.getItem('sheetUrl');
-      const isValid = saved && (saved.includes('output=csv') || saved.includes('export?format=csv'));
-      document.getElementById('sheetUrl').value = isValid ? saved : DEFAULT_SHEET_URL;
-      // Auto-load network on page open
-      loadFromSheet(true);
     });
 
-    async function loadFromSheet(silent = false) {
+    async function loadFromSheet() {
       const btn = document.getElementById('loadSheetBtn');
       const label = document.getElementById('loadSheetLabel');
-      const sheetUrl = document.getElementById('sheetUrl').value.trim();
+      const status = document.getElementById('networkStatus');
+      let url = document.getElementById('sheetUrl').value.trim();
+      if (!url) return;
 
-      if (!sheetUrl) return;
+      // Convert any Google Sheets URL to a CSV export URL
+      if (url.includes('docs.google.com/spreadsheets/d/')) {
+        const idMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+        const gidMatch = url.match(/[#?&]gid=([0-9]+)/);
+        if (idMatch) {
+          url = `https://docs.google.com/spreadsheets/d/${idMatch[1]}/export?format=csv${gidMatch ? '&gid=' + gidMatch[1] : ''}`;
+        }
+      }
 
-      localStorage.setItem('sheetUrl', sheetUrl);
       label.textContent = 'Loading...';
       btn.style.opacity = '0.6';
+      status.style.display = 'none';
 
       try {
-        const res = await fetch('http://localhost:3456/load-network?url=' + encodeURIComponent(sheetUrl));
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Could not access the sheet (HTTP ' + res.status + ')');
+        const csv = await res.text();
+
+        const lines = csv.trim().split('\n');
+        let headerIndex = 0;
+        for (let i = 0; i < Math.min(5, lines.length); i++) {
+          if (lines[i].toLowerCase().includes('domain')) { headerIndex = i; break; }
+        }
+        const headers = lines[headerIndex].replace(/"/g, '').split(',').map(h => h.trim().toLowerCase());
+        const domainIdx = headers.indexOf('domain');
+        if (domainIdx === -1) throw new Error('No "Domain" column found in this sheet.');
+
+        const contactIdx = headers.findIndex(h => h.includes('contact'));
         networkMap = {};
-        data.network.forEach(r => { if (r.domain) networkMap[r.domain] = r.contact || ''; });
-        document.getElementById('networkInput').value = data.domains.join('\n');
-        label.textContent = `✓ ${data.domains.length} domains loaded`;
+        const domains = [];
+        lines.slice(headerIndex + 1).forEach(line => {
+          const cols = line.split(',');
+          const domain = extractDomain((cols[domainIdx] || '').replace(/"/g, '').trim());
+          if (!domain) return;
+          const contact = contactIdx >= 0 ? (cols[contactIdx] || '').replace(/"/g, '').trim() : '';
+          domains.push(domain);
+          networkMap[domain] = contact;
+        });
+
+        document.getElementById('networkInput').value = domains.join('\n');
+        const hasContacts = Object.values(networkMap).some(v => v);
+        status.textContent = `✓ ${domains.length} domains loaded${hasContacts ? ' with contact names' : ''}`;
+        status.style.color = '#9ebe2e';
+        status.style.display = 'block';
+        label.textContent = 'Load Sheet';
         btn.style.opacity = '1';
       } catch(e) {
-        label.textContent = 'Load from Google Sheet';
+        label.textContent = 'Load Sheet';
         btn.style.opacity = '1';
-        if (!silent) alert('Could not load sheet: ' + e.message);
+        status.textContent = '⚠ ' + e.message + ' — make sure the sheet is shared as \"Anyone with the link can view\"';
+        status.style.color = '#f87171';
+        status.style.display = 'block';
       }
     }
 
